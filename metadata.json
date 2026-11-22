@@ -1,0 +1,8 @@
+{
+  "name": "Remix ParkPool AI — Supervised Multi-Agent Parking Platform",
+  "description": "An intelligent shared-parking coordination platform featuring a supervised multi-agent workflow, time-window pooling optimization, and interactive Bengaluru spatial discovery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

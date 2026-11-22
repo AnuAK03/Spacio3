@@ -1,0 +1,2374 @@
+PARKPOOL AI — COMPLETE COMBINED PROJECT HANDBOOK
+Compiled from the complete combined project ZIP.
+This document preserves the text of the project files. The original visual showcase image is included in the Word version.
+
+
+==========================================================================================
+FILE: README.md
+==========================================================================================
+# ParkPool AI — Combined Project Master Pack
+
+**Working title:** ParkPool AI  
+**Product:** Intelligent Shared Parking Coordination Platform  
+**Tagline:** Smart parking. Shared possibilities.  
+**Version:** 2.0 — combined project baseline  
+**Status:** Proposed product and architecture; not a completed or production-validated application.
+
+## What this package contains
+
+This package combines two source concepts:
+
+1. **Parking Pooling System — Project Handover & Discussion Summary**: the practical India-focused marketplace and its real-world operating concerns.
+2. **ParkPool AI — Complete Project Pack**: the 12-module architecture, 12 specialist-agent proposal, optimization, evaluation, technology and implementation plan.
+
+The combined product keeps the practical marketplace and operations from the handover, then adds an intelligence and optimization layer. The original source documents are preserved in `source_material/` and the original ParkPool AI documentation remains in `docs/`.
+
+## The combined product in one paragraph
+
+ParkPool AI is an India-focused, web-first shared-parking marketplace and coordination platform. It connects drivers with verified, legally authorized private, residential-community and commercial parking providers. Drivers discover nearby spaces, compare actual walking routes, prices, vehicle fit and source-stamped availability, then book and manage a parking session. Providers control their inventory, schedules, buffers and access rules. A hybrid intelligence layer uses deterministic services and mathematical optimization for availability, matching, booking and allocation, while specialist AI agents interpret requests, coordinate tools, summarize evidence and explain recommendations. Confirmed bookings remain protected by transactional backend rules.
+
+## The central product decision
+
+**The marketplace is the product foundation; reliable distributed time-window coordination is the core technical differentiator.**
+
+Do not position this as merely another parking listing app or claim that it is the first AI parking platform. Parking discovery, private-space rentals, shared-parking allocation and multi-agent parking research already exist. The proposed contribution is the integrated implementation and experimentally evaluated combination of:
+
+- distributed provider coordination;
+- provider authorization and property-level constraints;
+- time-window pooling with buffers and owner-use periods;
+- uncertainty-aware allocation and controlled reallocation;
+- deterministic booking integrity;
+- hybrid AI-agent plus mathematical-optimization architecture;
+- evidence-grounded, explainable recommendations;
+- evaluation against simple baselines.
+
+This is a proposed differentiation, not proof of global novelty, patentability or commercial success.
+
+## Package map
+
+| Folder/file | Purpose |
+|---|---|
+| `docs/00_COMBINED_PROJECT_BLUEPRINT.md` | Master explanation of the combined project |
+| `docs/01_PROJECT_VISION_AND_ORIGINALITY.md` | Product vision and honest originality assessment |
+| `docs/02_SRS.md` | Functional and non-functional requirements |
+| `docs/03_12_MODULE_ARCHITECTURE.md` | Twelve modules and acceptance criteria |
+| `docs/04_MULTI_AGENT_ARCHITECTURE.md` | Twelve agents, orchestration, RAG and MCP |
+| `docs/05_TECH_STACK_AND_REPOSITORY.md` | Technology and repository plan |
+| `docs/06_UI_UX_PLAN.md` | Driver, provider and admin screens |
+| `docs/07_IMPLEMENTATION_ROADMAP.md` | Phased build plan |
+| `docs/08_TESTING_AND_EVALUATION.md` | Metrics, baselines and experiments |
+| `docs/09_SECURITY_RESPONSIBLE_AI.md` | Security, privacy, safety and AI boundaries |
+| `docs/10_MASTER_DEVELOPMENT_PROMPT.md` | Instructions for step-by-step development |
+| `docs/11_OPERATIONS_PILOT_AND_BUSINESS.md` | Operational rules, pilot and business model |
+| `docs/12_COMPARISON_AND_DECISION_LOG.md` | Comparison of both source ideas and adopted decisions |
+| `docs/13_REQUIREMENTS_TRACEABILITY.md` | Requirements mapped to modules and tests |
+| `source_material/` | Original handover source |
+| `database/initial_schema.sql` | Starter schema from original pack; not production complete |
+| `backend/app/main.py` | Minimal FastAPI health-check starter |
+| `design/parkpool_ai_product_showcase.png` | Original generated concept board |
+| `design/diagrams/` | Architecture and workflow diagrams |
+| `research/REFERENCES.md` | Preliminary competitor and research references |
+
+## Important implementation truth
+
+The included backend is only a minimal FastAPI health-check starter and the SQL is a starter schema. The frontend, full APIs, authentication, payment gateway, agent workflows, optimization engine, maps integration, RAG, MCP and production operations are **not implemented** by this package. The documents specify what should be built.
+
+The showcase image and diagrams are illustrative concept assets. Any sample prices, ratings, analytics or UI content shown in them are fictional placeholders, not live data or measured results.
+
+## First milestone
+
+1. Read `docs/00_COMBINED_PROJECT_BLUEPRINT.md`.
+2. Read `docs/11_OPERATIONS_PILOT_AND_BUSINESS.md`.
+3. Run the environment audit in `docs/05_TECH_STACK_AND_REPOSITORY.md`.
+4. Build a minimal reliable marketplace backend and database before advanced AI.
+5. Verify each milestone with tests and actual execution evidence.
+
+
+
+==========================================================================================
+FILE: PROJECT_STATUS.md
+==========================================================================================
+# Project Status — Combined Baseline
+
+**Current state:** Documentation and architecture baseline prepared. Product implementation remains at starter stage.
+
+| Component | Included state |
+|---|---|
+| Combined product definition | Documented |
+| Source comparison and decisions | Documented |
+| Requirements and modules | Documented |
+| 12-agent architecture | Proposed/documented |
+| Optimization approach | Proposed/documented |
+| Database SQL | Starter schema from source pack |
+| FastAPI backend | Minimal health-check starter |
+| React frontend | Not implemented |
+| Authentication | Not implemented |
+| Provider verification workflow | Not implemented |
+| Maps/routing integration | Not implemented |
+| Booking/payment integration | Not implemented |
+| OR-Tools optimizer | Not implemented |
+| LangGraph/CrewAI workflows | Not implemented |
+| RAG/MCP | Not implemented |
+| Demand forecasting | Not implemented |
+| Automated tests | Not included as completed tests |
+| Production deployment | Not implemented |
+
+Never mark a component complete without code, execution evidence and tests.
+
+
+
+==========================================================================================
+FILE: ARCHIVE_CONTENTS.txt
+==========================================================================================
+ParkPool AI Combined Project ZIP
+================================
+Includes:
+- Original ParkPool AI Complete Project Pack files (preserved)
+- Original Parking Pooling System handover text
+- Combined project blueprint
+- Source comparison and decision log
+- Operations, pilot, business model and risk register
+- Requirements traceability
+- Glossary and project status
+- Architecture/workflow Mermaid diagrams
+- Original ParkPool AI product showcase PNG
+
+Status note:
+This is a planning and starter-code package. It is not a complete runnable production platform.
+
+
+
+==========================================================================================
+FILE: source_material/PARKING_POOLING_SYSTEM_HANDOVER.txt
+==========================================================================================
+PARKING POOLING SYSTEM
+Project Handover & Discussion Summary
+India-focused concept | Initial example: Phoenix Mall of Asia, Bengaluru
+1. Purpose of this document
+This document captures the key points from an earlier brainstorming discussion about a Parking Pooling System. It is intended to be shared with a teammate or uploaded to another AI assistant so the project can continue without repeating the original background.
+Important: this is an early concept and discussion handover, not a validated business plan, legal opinion, final product specification, or proof that the proposed model is commercially viable.
+2. Core idea
+Build a location-based marketplace that connects people who need temporary parking with individuals or organisations that have legally usable, underutilised parking spaces near busy destinations. A space owner/host lists availability for specific time slots; a driver discovers, books, pays for, and navigates to that space.
+The concept is similar to pooling or sharing unused parking capacity. It is not carpooling: the vehicle remains with its driver, and the platform coordinates access to a parking space.
+3. Problem being addressed
+•	Parking demand becomes high around malls, offices, hospitals, event venues, markets and other busy destinations.
+•	Drivers may waste time searching for a space, face congestion, or find official parking full or inconvenient.
+•	At the same time, some homes, apartments, offices and commercial properties may have parking capacity that is unused during certain hours.
+•	The platform aims to make this unused capacity discoverable and bookable, while giving hosts a way to earn from available space.
+4. Example use case discussed
+A person is visiting Phoenix Mall of Asia in Bengaluru. Mall parking may be crowded, full, or inconvenient. The driver opens the platform, searches around the mall, compares nearby verified parking spaces by price, availability and walking distance, books a suitable time slot, and follows directions to the actual parking entrance. A nearby property owner earns money for making the space available.
+5. Main users and stakeholders
+•	Driver / customer: searches for a space, books a slot, provides vehicle details, parks and leaves.
+•	Host / space owner: lists a space, sets availability and price, approves or manages bookings, and receives earnings.
+•	Property manager / authorised commercial partner: may provide multiple spaces and control access.
+•	Platform administrator / support team: verifies listings, handles disputes and incidents, monitors bookings and manages refunds.
+6. Proposed end-to-end user flow
+1.	Discover: Driver enters a destination and date/time. The platform displays available spaces nearby.
+2.	Compare: Driver checks the exact location/entrance, walking route and estimated walking time, price, space type, restrictions and availability.
+3.	Book: Driver selects a time slot and enters required vehicle details. Booking rules, cancellation terms and any deposit/fees are shown before confirmation.
+4.	Navigate: The app guides the driver to the correct property entrance and parking bay—not merely to a map pin.
+5.	Verify arrival: A booking code or QR/access verification can help confirm that the correct customer has arrived. The host/property controls actual access.
+6.	Park and manage session: The session is recorded as started. The customer can view the end time and request an extension if available.
+7.	End session: The driver leaves and the booking is marked complete, subject to the agreed check-out process.
+8.	Payment and feedback: The platform issues a receipt, processes the applicable payment/refund, and allows reviews or incident reports.
+7. Features discussed or proposed
+Customer / driver
+•	Search parking by destination or map location.
+•	See available spaces, time slots, price and walking distance/time.
+•	View photos, dimensions, vehicle restrictions, access instructions and host/property details.
+•	Book, pay, cancel and receive booking confirmation/receipt.
+•	Get directions to the real entrance and parking bay.
+•	View active booking, end time, extension status and booking history.
+•	Contact support, report an incident and leave a review.
+Host / property
+•	Register and submit proof of identity/authority to list the space.
+•	Add space details, photos, access instructions, restrictions and pricing.
+•	Set availability by date/time and block unavailable periods.
+•	View, approve or manage bookings where manual approval is required.
+•	Set a hard latest departure time and a buffer before the space is needed again.
+•	View bookings and earnings.
+Admin / operations
+•	Verify hosts, properties and parking listings before they go live.
+•	Review suspicious listings, complaints, disputes and incident reports.
+•	Manage cancellations, refunds, overstay cases and customer support.
+•	Monitor booking completion, no-shows, late departures and host reliability.
+•	Maintain an auditable record of booking and access events.
+8. Major problems and concerns raised
+Security and criminal misuse
+•	Concern: Concern: What if a customer parks a vehicle containing explosives, weapons, contraband or other dangerous/illegal material on a host's private property? The host may face danger, investigation or liability even if they did not know what was inside.
+•	Possible handling discussed: Discussion direction: verify the host and their authority to list the property; collect booking and vehicle details; use controlled check-in/access records; provide a clear suspicious-activity and emergency reporting process. Do not claim that the platform can security-clear a vehicle or guarantee that misuse is impossible. Never advise a host to inspect dangerous contents or handle a suspected device. Keep people away and contact emergency services/police (112 in India) when there is an immediate threat.
+•	Open question: Still unresolved: the platform's legal responsibility, the host's responsibility, what checks are lawful and proportionate, insurance coverage, and how law enforcement would be contacted.
+Late departure / host needs the space back
+•	Concern: Concern: A host rents a space until 6:00 PM, but the driver has not removed the vehicle by 7:00 PM. The host may need to leave or use the space at 6:15 PM. This can create a direct conflict and may trap or inconvenience the host.
+•	Possible handling discussed: Discussion direction: use fixed booking slots; require a host-defined buffer before the host needs the space; record a hard latest departure time; allow extensions only when the host explicitly approves and the next booking does not conflict; show overstay charges and escalation/support rules before booking.
+•	Open question: Still unresolved: how to handle a vehicle that remains after the host's hard deadline, what lawful remedies exist, who pays for resulting losses, and how to avoid unsafe or unlawful towing/clamping. Do not assume the host can forcibly move or tow a vehicle.
+Walking distance and customer willingness
+•	Concern: Concern: Will a customer really park 300–500 metres away from a mall or destination instead of using the destination's own parking? A cheaper space may not be attractive if the walk is inconvenient, unsafe, poorly lit, inaccessible or difficult in bad weather.
+•	Possible handling discussed: Discussion direction: show the actual pedestrian route and estimated walking time, not just straight-line distance. The earlier discussion used roughly 6–8 minutes each way for 500 metres as an estimate, but customer acceptance was not established.
+•	Open question: Still unresolved: the maximum distance customers will accept, whether they will pay for the convenience, and how this changes by destination, weather, time of day, mobility needs and luggage/children.
+9. Additional operational and trust risks to investigate
+•	Permission and ownership: Does the host own the space or have written authority from the owner, apartment association or property manager to rent it to outsiders?
+•	Access mismatch: A booking may be confirmed but a gate/security guard may refuse entry or the customer may not find the correct entrance.
+•	Space suitability: The listed bay may not fit the customer's car, SUV, two-wheeler or vehicle height/width.
+•	Double booking: A host may list the same space on another platform or promise it to someone offline.
+•	No-shows and cancellations: The host may keep a slot unavailable for a customer who never arrives.
+•	Damage, theft and disputes: Responsibility for vehicle damage, theft, scratches, property damage or pre-existing damage must be defined.
+•	Emergency access: A parked vehicle must not block fire exits, emergency routes, ramps or other vehicles.
+•	Privacy and data protection: Vehicle registration, identity, location and booking history are sensitive operational data and should be collected only as needed and protected.
+•	Reliability: A marketplace needs enough spaces near a destination at the exact times customers need them; scattered listings may not be useful.
+10. Business model ideas discussed
+A marketplace commission was discussed as an illustrative model. One example used a 20% platform commission on a completed booking. This was an example for discussion, not a final price or validated margin. Other possible fee structures—such as host subscription, customer service fee or property-level partnership pricing—would need separate evaluation.
+Before choosing a model, calculate payment-gateway costs, customer support, refunds, insurance, taxes, verification/operations costs, host payout timing, discounts and customer acquisition costs.
+11. Recommended initial pilot direction
+•	Start in one compact Bengaluru destination zone rather than launching across the whole city.
+•	Prioritise managed commercial properties or authorised parking operators over private residential spaces for the first pilot. This was recommended to reduce access, trust and operational complexity—not because residential participation is permanently ruled out.
+•	Try to secure 3–5 authorised property partners and a small, manually verified inventory.
+•	Initially use human verification and customer support rather than automating every edge case.
+•	Use fixed slots, host buffers, hard return times and host-approved extensions.
+•	Measure booking completion, failed entry, late departure, cancellations, customer walking-distance tolerance, repeat usage, host satisfaction and contribution margin.
+12. Technology direction previously proposed
+The earlier discussion proposed the following possible stack. Treat it as a starting suggestion, not a final architecture decision:
+•	Frontend: Next.js + TypeScript.
+•	Backend/API: FastAPI + Python.
+•	Database: PostgreSQL with PostGIS for location-based queries.
+•	Maps and routing: map integration that can show pedestrian routes, walking time and the exact parking entrance.
+•	Payments: an India-supported payment gateway; compare fees, refunds, settlements and compliance before selecting one.
+•	Operations: admin tools for listing verification, booking management, disputes, support and audit history.
+The technical design should not be finalised until the business rules, access process, liability model and pilot scope are clearer.
+13. Legal, safety and compliance work required
+•	Obtain legal advice on property permissions, host authority, parking/commercial-use restrictions and local rules.
+•	Define platform, host and customer responsibilities in clear terms and booking policies.
+•	Review Indian data-protection requirements, including the Digital Personal Data Protection framework, for identity, vehicle and location data.
+•	Review consumer-protection, payment, tax, refund and grievance-handling obligations.
+•	Investigate suitable insurance and clarify whether existing property/vehicle policies cover this use.
+•	Create a documented emergency and suspicious-activity escalation process. The app must not promise complete security screening.
+14. Decisions, recommendations and unconfirmed assumptions
+Area	Status	What to remember
+Core concept	Agreed concept	Marketplace connecting drivers with underused, authorised parking spaces.
+Initial example	Illustrative	Phoenix Mall of Asia, Bengaluru; not a confirmed launch location.
+Commercial-first pilot	Recommendation	Start with 3–5 authorised commercial partners to reduce early operational complexity.
+20% commission	Illustration only	A discussion example, not a decided or validated rate.
+500 m / 6–8 min walk	Estimate only	Must test real walking routes and customer willingness.
+QR / access verification	Proposed feature	Requires host/property cooperation; does not itself guarantee security.
+Tech stack	Proposed direction	Next.js, TypeScript, FastAPI, PostgreSQL/PostGIS; not finalised.
+Legal / insurance model	Unresolved	Requires qualified legal and insurance review.
+15. Key questions the team must answer next
+9.	Who is the first target customer: mall visitors, office commuters, hospital visitors, event attendees or another segment?
+10.	Which exact Bengaluru area/destination should be used for a small pilot, and what evidence supports that choice?
+11.	Will the first supply come only from commercial properties, or will verified homes/apartments also be allowed?
+12.	What documents and permissions must a host provide before listing a space?
+13.	How will entry work at gated properties when the host is unavailable?
+14.	What happens if the space is occupied, inaccessible, incorrectly described or unsafe on arrival?
+15.	What is the process if a customer does not leave on time? Which remedies are lawful and practical?
+16.	What insurance is available, what does it cover, and what exclusions apply?
+17.	What checks are proportionate for customers and vehicles, and how will personal data be protected?
+18.	How far will customers walk, and what price difference makes the walk worthwhile?
+19.	What is the actual unit economics after host payout, payment fees, refunds, support, verification, insurance and taxes?
+20.	How will the pilot measure repeat bookings, reliability and profitability?
+16. Suggested next-step plan
+21.	Validate demand: interview drivers near one selected destination and learn their current parking pain points and acceptable walking distance.
+22.	Validate supply: speak with authorised commercial property owners/managers and confirm whether they can legally and operationally offer unused spaces.
+23.	Map the pilot zone: measure real pedestrian routes, entrances, safe walking paths and available capacity.
+24.	Write operating rules: booking windows, buffers, check-in, check-out, extensions, overstay, cancellations, refunds and incident escalation.
+25.	Get legal/insurance review before accepting public bookings.
+26.	Run a small manual pilot before building a fully automated platform.
+27.	Use pilot data to decide whether to build, change the target market or stop.
+17. Context prompt for another AI assistant
+You are helping develop an India-focused Parking Pooling System. The concept is a location-based marketplace that lets drivers book authorised, underused parking spaces near busy destinations, while hosts earn from available capacity. An example discussed was a visitor to Phoenix Mall of Asia in Bengaluru finding a nearby space, booking a time slot, navigating to the actual entrance, parking and paying through the platform.
+The three central concerns already raised are: (1) security and criminal misuse of a vehicle parked on private property, including the possibility of dangerous or illegal contents; (2) late departure when a host needs the space back at a fixed time; and (3) whether customers will walk around 300–500 metres from a space to their destination. Earlier discussion suggested verifying hosts and authority, using controlled booking/access records and emergency escalation; fixed slots, host buffers, hard departure limits and host-approved extensions; and displaying actual walking routes/time. These are risk mitigations to investigate, not guarantees.
+A commercial-property-first pilot with roughly 3–5 authorised partners in one Bengaluru destination zone was recommended. A 20% commission was only an illustrative revenue example. A possible stack was Next.js + TypeScript, FastAPI + Python, PostgreSQL + PostGIS, maps/routing and an India-supported payment gateway. None of these choices is final.
+Continue by challenging assumptions rather than blindly agreeing with the concept. Separate facts, recommendations and open questions. Prioritise customer demand, legal permission, host liability, insurance, safe access, overstay handling, walking-distance acceptance and unit economics. Do not claim that the platform can guarantee security, and do not assume a host may forcibly tow or move a vehicle. Recommend practical validation steps before building a full product.
+18. Important note on accuracy
+This handover reconstructs the key points available from the earlier brainstorming discussion. Some items are recommendations or ideas, not decisions made by the project owner. The team should confirm any missing details with the original participants and validate lega
+
+
+
+==========================================================================================
+FILE: docs/00_COMBINED_PROJECT_BLUEPRINT.md
+==========================================================================================
+# 00 — Combined Project Blueprint
+
+## 1. Project identity
+
+**Name:** ParkPool AI  
+**Category:** Intelligent shared-parking marketplace and coordination platform  
+**Tagline:** Smart parking. Shared possibilities.  
+**Initial market context:** India; a compact Bengaluru pilot is proposed. Phoenix Mall of Asia is an illustrative example from the brainstorming handover, not a confirmed launch partner or location.
+
+## 2. Executive summary
+
+ParkPool AI connects people who need temporary parking with people or organizations that have legally usable, underutilized parking capacity. A driver enters a destination and time window, sees verified eligible spaces, compares price and actual pedestrian route, books a suitable space, follows entrance-specific directions, checks in, parks, checks out and receives a receipt. A host or property manager controls the spaces they are authorized to offer, including rates, operating schedules, owner-use blocks, access instructions and hard departure limits.
+
+The combined version adds a coordination layer that can reason across independent providers and multiple time windows. Deterministic services establish availability and booking truth. A constraint optimizer proposes feasible allocations. AI agents interpret natural-language needs, invoke approved tools, summarize eligible evidence and explain recommendations. Human/user confirmation and backend validation remain mandatory for consequential actions.
+
+## 3. The problem
+
+Parking demand is uneven across both geography and time. Around malls, offices, hospitals, markets and event venues, drivers may face full or inconvenient official parking and spend time searching. At the same time, homes, apartments, offices and commercial properties may have authorized parking capacity that is idle during specific hours.
+
+A basic listing marketplace helps discovery, but it does not fully solve:
+- fragmented inventory across independent providers;
+- time-window overlaps and provider owner-use periods;
+- uncertain arrivals and departures;
+- late departures and host hard deadlines;
+- cancellations and provider withdrawal;
+- vehicle/space compatibility;
+- entrance and gated-property access;
+- safe pedestrian routes and acceptable walking distance;
+- double booking and stale availability;
+- trust, liability, incident and dispute processes.
+
+## 4. The solution
+
+### Marketplace foundation
+- Driver, host, community manager, commercial operator and admin accounts.
+- Verified provider and property authority.
+- Facility and parking-space listings with photos, dimensions and restrictions.
+- Destination-based discovery and map/list results.
+- Price, walking route/time, vehicle fit, amenities and policy comparison.
+- Time-bounded reservations, payment integration and receipts.
+- Check-in/check-out, extension requests and booking history.
+- Reviews, support, disputes and audit history.
+
+### Coordination and intelligence layer
+- Shared inventory pools across authorized providers.
+- Time-window matching with explicit buffers and owner-use windows.
+- Rolling-horizon optimization for future allocation proposals.
+- Controlled reallocation for cancellations, changed supply and uncertain arrival/departure.
+- Explainable ranking using verified data and explicit user preferences.
+- Multi-agent orchestration for complex request interpretation and evidence gathering.
+- Demand forecasting only after sufficient historical data exists.
+
+## 5. Example end-to-end scenario
+
+A driver plans to visit Phoenix Mall of Asia tomorrow from 2 PM to 6 PM and has an SUV. They want a space within a tolerable walking distance and a clear route to the actual entrance.
+
+1. Driver enters destination, date/time, vehicle and preferences.
+2. Intent workflow extracts structured requirements.
+3. Geospatial service retrieves nearby approved facilities.
+4. Availability service checks provider schedules, exceptions, holds, bookings and buffers.
+5. Matching rules remove incompatible vehicle sizes, unauthorized listings and inaccessible slots.
+6. Pricing service calculates the full server-side price.
+7. Routing adapter obtains pedestrian route distance/time and entrance details.
+8. Review service summarizes eligible completed-booking reviews, if available.
+9. Ranking/optimizer orders feasible candidates and provides factor-level explanations.
+10. Driver chooses a candidate and explicitly confirms.
+11. Booking service creates a transactional hold; payment adapter verifies payment where required.
+12. Confirmation, access instructions and navigation are shown.
+13. Check-in/access verification records arrival. The host/property controls actual entry.
+14. Session end time and extension rules remain visible. Extension requires availability and host approval where configured.
+15. Check-out closes the session, payment/refund reconciliation completes, and the driver may review or report an incident.
+
+All example places, times and spaces are illustrative. The platform must not claim live availability unless a real provider integration supplies it.
+
+## 6. User groups
+
+| User | Need | Platform value |
+|---|---|---|
+| Driver/customer | Reliable parking near destination | Discovery, comparison, booking, navigation |
+| Individual host | Monetize authorized idle space | Listing, schedule, earnings, booking controls |
+| Apartment/community manager | Control shared inventory and permissions | Managed access, inventory and audit |
+| Commercial operator | Improve utilization and bookings | Inventory integration, analytics, operations |
+| Admin/support | Keep platform safe and reliable | Verification, dispute and audit tools |
+
+## 7. Product principles
+
+1. **Permission before publication:** an empty space is not automatically rentable.
+2. **Backend truth:** database/services, not LLM text, determine availability, price and booking status.
+3. **Hard constraints before ranking:** vehicle fit, access, time, provider status and booking integrity cannot be traded away by a high score.
+4. **Confirmed bookings are protected:** optimizer cannot silently displace a confirmed customer.
+5. **Actual route, not just map pin:** show the correct entrance and pedestrian route where data exists.
+6. **Operational safety first:** access, liability, overstay and emergency handling need explicit procedures.
+7. **Human approval for sensitive actions:** AI suggestions are advisory.
+8. **Evidence over claims:** distinguish live data, provider-reported data, estimates, synthetic data and mockups.
+9. **Build modular monolith first:** do not split services prematurely.
+10. **Measure before claiming:** performance and originality claims need reproducible evidence.
+
+## 8. Differentiators
+
+### D1. Distributed authorized provider coordination
+A common coordination layer for independent private, community and commercial providers, with each provider's authority, access rules and inventory constraints recorded.
+
+### D2. Time-window pooling
+A physical space can be allocated to multiple bookings only in non-overlapping time windows, with configured buffers and owner-use blocks.
+
+### D3. Uncertainty-aware allocation
+Evaluate changes such as cancellation, provider withdrawal, early departure and late arrival. Reallocation must preserve confirmed booking guarantees and must not pretend uncertainty can be eliminated.
+
+### D4. Hybrid intelligence
+LLM agents interpret and coordinate; deterministic services enforce rules; OR-Tools or an equivalent optimizer proposes feasible allocations; the transactional backend commits bookings.
+
+### D5. Evidence-grounded recommendations
+Every recommendation factor traces to a source: availability query, price calculation, route result, provider verification, vehicle dimensions or eligible review.
+
+### D6. Experimentally evaluated system
+Compare the combined architecture with first-come-first-served, distance-only, greedy and rule-based baselines.
+
+These are proposed differentiators. They are not verified as globally unique or patentable.
+
+## 9. What is not being claimed
+
+- Not the world's first parking marketplace.
+- Not the first private parking sharing service.
+- Not the first multi-agent parking allocation system.
+- Not guaranteed crime prevention or vehicle security clearance.
+- Not guaranteed live availability without connected providers.
+- Not guaranteed demand prediction without evaluated historical data.
+- Not a completed product or commercially validated business.
+
+## 10. Scope
+
+### MVP
+- User roles and authentication.
+- Provider authorization workflow.
+- Facility and space inventory.
+- Geospatial discovery.
+- Provider schedules and exceptions.
+- Availability and conflict prevention.
+- Basic weighted ranking.
+- Booking hold/confirmation with payment sandbox or mock adapter.
+- Admin verification and booking operations.
+- Auditable check-in/check-out events.
+
+### Advanced release
+- Shared inventory pools.
+- OR-Tools time-window optimizer.
+- Uncertainty scenario simulation and controlled reallocation.
+- Explainable multi-agent workflow.
+- Review summaries and policy RAG.
+- MCP integrations with scoped tools.
+- Demand forecasting after data accumulation.
+- Operational analytics and pilot reports.
+
+### Out of scope initially
+- Autonomous valet or vehicle movement.
+- Unapproved gate/barrier control.
+- Guaranteed IoT sensor coverage.
+- Production real-money payments before legal/security/provider review.
+- Automatic provider approval by AI.
+- Automatic towing/clamping or physical enforcement.
+
+## 11. Success definition
+
+The first pilot succeeds only if it demonstrates:
+- authorized and reliable supply;
+- successful customer entry and completed sessions;
+- low conflict and late-departure incidence;
+- customer acceptance of route and walking distance;
+- host satisfaction and repeat participation;
+- positive or improving unit economics;
+- measurable value from coordination/optimization over simple baselines.
+
+No target is an achieved result until measured and documented.
+
+
+
+==========================================================================================
+FILE: docs/01_PROJECT_VISION_AND_ORIGINALITY.md
+==========================================================================================
+# 01 — Project Vision and Originality Assessment
+
+## 1. Product definition
+
+**ParkPool AI** is a proposed autonomous shared-parking coordination platform. It connects drivers with verified private, residential-community and commercial parking supply, and coordinates availability and allocation across providers and time windows.
+
+### Core problem
+
+Parking demand is geographically and temporally uneven. Some drivers cannot quickly identify suitable parking near a destination, while some privately or commercially controlled spaces may be idle at particular times. Existing listings alone do not solve the more difficult coordination problems: uncertain arrival/departure times, provider restrictions, overlapping reservations, dynamic supply changes, and competing user preferences.
+
+### Proposed solution
+
+A web-first, mobile-friendly platform that:
+- Discovers nearby parking using geospatial search.
+- Compares price, walking distance, amenities, provider trust and verified availability.
+- Allows authorized providers to list time-bounded inventory.
+- Coordinates shared supply through time-window pooling.
+- Uses optimization for constrained allocation.
+- Uses specialist AI agents for intent understanding, investigation, explanation and workflow coordination.
+- Provides audit trails, human approval and measurable evaluation.
+
+## 2. Is the idea copying?
+
+No single broad idea is owned by one company, and using established product patterns or open technologies is not automatically copying. However, reproducing an existing app's exact interface, branding, text, proprietary data, code or protected workflows would create legal and ethical risks.
+
+The basic marketplace concept is already present in the market. A preliminary search surfaced ParkSaathi, which advertises private residential parking in Bengaluru, allowing hosts to list spaces, set prices and accept requests. Therefore, a simple "find and rent a nearby private parking space" positioning is not differentiated.
+
+Research also predates this project on shared-space allocation, multi-agent parking allocation, dynamic allocation and parking route optimization. The proposed system must build on this literature transparently rather than claim those ideas as new.
+
+## 3. Proposed differentiated contribution
+
+The strongest defensible scope is an integrated, evaluated system for:
+
+1. **Distributed provider coordination:** independent providers, communities and commercial facilities share authorized inventory through one coordination layer.
+2. **Time-window pooling:** a physical space can serve multiple bookings across non-overlapping intervals, with explicit buffers and owner-reserved periods.
+3. **Uncertainty-aware reallocation:** handle late arrivals, early departures, provider withdrawal, cancellations and changing supply without silently breaking confirmed guarantees.
+4. **Hybrid intelligence:** LLM agents coordinate and explain; deterministic services enforce constraints; mathematical optimization performs allocation.
+5. **Evidence-grounded recommendation:** every recommendation is traceable to availability queries, prices, distance calculations, verified amenities and eligible reviews.
+6. **Explainability and evaluation:** compare the system against simple baselines on utilization, match rate, walking distance, conflicts, response time and operating cost.
+
+These are proposed design contributions. Their novelty as a combination has not been conclusively established by the preliminary web search.
+
+## 4. Competitor landscape
+
+| Product / research | Existing overlap | Implication |
+|---|---|---|
+| ParkSaathi (Bengaluru) | Private residential parking, hosts listing spots, hourly requests | Direct local competitor for the basic marketplace |
+| SpotHero | Parking discovery and reservations | Discovery/booking is established |
+| JustPark | Private driveway and commercial parking rentals | Peer-to-peer/private parking is established |
+| Parkopedia | Parking information, locations and pricing | Parking information aggregation is established |
+| Shared parking allocation research | Allocation of privately shared spaces over time | Time-based sharing is established research |
+| Multi-agent parking allocation research | Vehicle/space agents and negotiation/allocation | Multi-agent parking allocation is established research |
+
+Competitor feature sets, availability and market reach change. Verify current product details directly before relying on this table for commercial strategy.
+
+## 5. Product positioning
+
+**Recommended description:**  
+"An explainable, multi-agent coordination and optimization platform for distributed shared parking inventory."
+
+Avoid:
+- "The world's first AI parking app."
+- "The first multi-agent parking system."
+- "No competitors exist."
+- "Guaranteed real-time parking availability" unless a provider integration actually supplies it.
+
+## 6. Target users
+
+- Drivers seeking parking near a destination.
+- Individual property owners with authorized spare parking.
+- Apartment and residential-community managers.
+- Commercial parking operators.
+- Employers and campuses managing time-varying inventory.
+- Platform administrators and support staff.
+
+## 7. Business model hypotheses
+
+- Commission on completed bookings.
+- Provider subscription for inventory and analytics tools.
+- Enterprise/community management subscription.
+- Optional promoted listings, subject to transparent labeling.
+- Aggregated privacy-protected utilization analytics for authorized customers.
+
+Validate willingness to pay, provider acquisition cost, dispute rates, insurance/liability arrangements and local regulations before selecting a final model.
+
+## 8. Initial market validation
+
+Recommended pilot: one tightly bounded neighbourhood or destination cluster in Bengaluru, after provider and property permissions are secured.
+
+Interview:
+- 15–20 drivers with recurring destination parking needs.
+- 10–15 private-space owners or apartment representatives.
+- 5–10 commercial parking operators.
+
+Validate supply reliability, willingness to share, pricing, safety expectations, access arrangements, no-show rules and dispute handling. Do not assume a space can be shared just because it appears empty.
+
+## 9. Research question
+
+Can a hybrid multi-agent coordination architecture combined with constraint-based dynamic allocation improve parking match rate and utilization while maintaining booking reliability and acceptable latency compared with first-come-first-served and rule-based baselines?
+
+## 10. Preliminary conclusion
+
+ParkPool AI is a valid substantial software engineering and research project. The basic marketplace is not original. The project becomes meaningfully differentiated through its precise coordination problem, provider authorization model, uncertainty-aware allocation, hybrid agent/optimizer architecture, explainability and rigorous comparative evaluation.
+
+
+
+==========================================================================================
+FILE: docs/02_SRS.md
+==========================================================================================
+# 02 — Software Requirements Specification (SRS)
+
+**Product:** ParkPool AI  
+**Version:** 1.0 planning baseline
+
+## 1. Purpose
+
+Specify requirements for a web-first, mobile-friendly shared-parking marketplace and coordination platform. This is a project baseline; requirements must be refined with pilot users, providers, legal review and technical feasibility testing.
+
+## 2. Scope
+
+### Included
+- Driver, provider, community manager, operator and administrator accounts.
+- Vehicle profiles and compatibility.
+- Verified parking facilities and individual spaces.
+- Geospatial search, filters and map-based discovery.
+- Schedules, exceptions, time-window availability and booking holds.
+- Pool membership and shared inventory coordination.
+- Recommendations, explainability and review summaries.
+- Reservation, payment-provider integration, cancellation and refund tracking.
+- Agent workflow orchestration, RAG, MCP tools and audit events.
+- Admin dashboards, testing, Docker deployment and documentation.
+
+### Excluded from initial release
+- Physical gate or barrier control.
+- Guaranteed IoT sensor availability.
+- Autonomous vehicle movement or valet operation.
+- Unverified automatic access to private property.
+- Real-money production payments before provider, legal and security review.
+
+## 3. User roles
+
+| Role | Permissions |
+|---|---|
+| Guest | Search public/approved listings and view permitted details |
+| Driver | Manage vehicles, reserve, pay, cancel, review |
+| Individual host | Manage own authorized spaces, schedules and prices |
+| Community manager | Manage only community inventory for which authority is documented |
+| Commercial operator | Manage own facilities, spaces, rates and reservations |
+| Administrator | Verify accounts/listings, manage disputes and platform settings |
+| AI workflow | Access only explicitly permitted tools/data; no unrestricted authority |
+
+## 4. Functional requirements
+
+### Identity and vehicles
+- FR-001: Register and authenticate users.
+- FR-002: Verify email/mobile using configured provider.
+- FR-003: Support role-based authorization.
+- FR-004: Maintain profile and consent preferences.
+- FR-005: Register vehicles and relevant dimensions/type.
+- FR-006: Support account suspension and access revocation.
+
+### Provider and inventory
+- FR-007: Onboard individual, community and commercial providers.
+- FR-008: Record evidence of authority to list each space.
+- FR-009: Create facilities and geospatial locations.
+- FR-010: Create spaces with dimensions, vehicle compatibility and amenities.
+- FR-011: Upload and moderate listing photographs.
+- FR-012: Configure rates, operating rules and cancellation policies.
+- FR-013: Admin can approve, reject or suspend listings.
+
+### Discovery
+- FR-014: Search by destination or permitted current location.
+- FR-015: Search nearby facilities using PostGIS.
+- FR-016: Filter by price, distance, vehicle fit, amenities and rating.
+- FR-017: Display results on a map and in a list.
+- FR-018: Calculate route/walking distance through a configured routing provider.
+- FR-019: Show the time and source of availability information.
+
+### Scheduling and pooling
+- FR-020: Providers can publish recurring schedules.
+- FR-021: Providers can add date-specific exceptions and blackout periods.
+- FR-022: Support time-bounded pool membership and provider constraints.
+- FR-023: Support booking holds with expiry.
+- FR-024: Prevent overlapping confirmed reservations.
+- FR-025: Apply configurable buffer times.
+- FR-026: Handle cancellation and provider withdrawal according to policy.
+- FR-027: Record allocation decisions and reallocation history.
+
+### Booking and payments
+- FR-028: Create reservation quotes from server-side rates.
+- FR-029: Hold inventory transactionally.
+- FR-030: Confirm booking only after required payment/provider verification.
+- FR-031: Process idempotent payment webhooks.
+- FR-032: Support cancellation and refund tracking.
+- FR-033: Notify users of reservation state changes.
+- FR-034: Maintain a complete booking state history.
+
+### Trust and AI
+- FR-035: Only eligible completed bookings can submit reviews.
+- FR-036: Calculate aggregate review metrics.
+- FR-037: Produce review theme/sentiment summaries with provenance.
+- FR-038: Generate recommendations using verified inputs.
+- FR-039: Explain recommendation factors and hard-constraint exclusions.
+- FR-040: Record agent runs, tool calls, outcomes and failures.
+- FR-041: Support human approval for sensitive or irreversible operations.
+- FR-042: Provide RAG answers with source references.
+- FR-043: Expose only allowlisted MCP tools and scoped permissions.
+- FR-044: Produce demand forecasts only when sufficient data and evaluation exist.
+
+## 5. Non-functional requirements and initial targets
+
+| ID | Requirement | Initial target / verification |
+|---|---|---|
+| NFR-001 | Search latency | p95 under 2 seconds on defined pilot workload |
+| NFR-002 | Booking integrity | Zero overlapping confirmed bookings in concurrency tests |
+| NFR-003 | Availability integrity | Source and freshness displayed; no invented live status |
+| NFR-004 | Reliability | Pilot design target 99.5% monthly availability, measured |
+| NFR-005 | Security | RBAC, secure sessions, secret management, audit |
+| NFR-006 | Privacy | Data minimization, retention policy and consent |
+| NFR-007 | Usability | Responsive desktop/mobile layouts and accessible controls |
+| NFR-008 | Maintainability | Modular code, migrations, tests and API documentation |
+| NFR-009 | Explainability | Recommendations expose major factors and evidence |
+| NFR-010 | Observability | Structured logs, metrics, traces and agent run IDs |
+
+Targets are engineering objectives, not achieved performance claims.
+
+## 6. Core business rules
+
+1. A listing must have verified authority/permission before being bookable.
+2. A space is not available unless schedule, exceptions, holds, bookings and provider status all permit it.
+3. AI cannot create or confirm availability.
+4. Booking quotes and totals are calculated server-side.
+5. Confirmed bookings are protected from opportunistic reallocation.
+6. Payment confirmation requires verified provider webhook or trusted reconciliation.
+7. A review must be linked to an eligible booking.
+8. A recommendation must respect hard constraints before applying ranking scores.
+9. A provider may block owner-use periods and withdraw future availability under published rules.
+10. All state changes must be auditable.
+
+## 7. Core acceptance scenarios
+
+- A driver searches for a destination and receives only compatible spaces with source-stamped availability.
+- Two users concurrently attempt to reserve the same space/time; at most one becomes confirmed.
+- A provider blocks a future period; the search result updates and no new hold is created for that interval.
+- A space is shared across adjacent non-overlapping windows with required buffer.
+- An agent proposes a booking, but the user explicitly confirms and the backend executes the transaction.
+- A RAG answer cites approved policy documents and refuses unsupported policy claims.
+- An unauthorized user cannot access another provider's private inventory or customer data.
+
+
+
+==========================================================================================
+FILE: docs/03_12_MODULE_ARCHITECTURE.md
+==========================================================================================
+# 03 — Twelve-Module Architecture
+
+Build these as bounded modules inside a modular monolith first. Each module owns its routes, schemas, services, persistence logic and tests. Avoid premature microservices.
+
+## Module 1 — Identity and User Management
+**Submodules:** registration, login, password reset, OTP provider adapter, session/refresh tokens, profiles, role/permission policy, consent, vehicle profiles.  
+**Acceptance:** role enforcement tests pass; users cannot access other users' vehicles or bookings.
+
+## Module 2 — Provider and Property Authorization
+**Submodules:** provider onboarding, individual/community/commercial types, identity/business verification workflow, authority evidence, property/space permission, provider status, compliance checklist.  
+**Acceptance:** unverified or unauthorized inventory cannot become bookable.
+
+## Module 3 — Parking Inventory and Listings
+**Submodules:** facilities, spaces, dimensions, vehicle fit, amenities, photographs, rates, policies, listing moderation, provider inventory dashboard.  
+**Acceptance:** CRUD, validation, moderation and provider isolation tests pass.
+
+## Module 4 — Geospatial Discovery
+**Submodules:** destination search, nearby search, PostGIS radius/bounding search, filters, map/list view, routing adapter, result pagination, availability freshness.  
+**Acceptance:** geospatial correctness tests and query latency benchmarks pass.
+
+## Module 5 — Availability and Scheduling
+**Submodules:** weekly schedule, date exceptions, blackout periods, provider owner-use blocks, booking holds, expiry, buffers, timezone handling, conflict detection.  
+**Acceptance:** concurrency tests demonstrate no overlapping confirmed bookings.
+
+## Module 6 — Recommendation Intelligence
+**Submodules:** intent parsing, candidate retrieval, hard-constraint filtering, multi-objective scoring, preference profiles, explanation generation, evidence references.  
+**Acceptance:** all recommendations are grounded in candidate records; incompatible spaces are excluded.
+
+## Module 7 — Pooling and Optimization
+**Submodules:** pool groups, memberships, time-window matching, rolling-horizon allocation, uncertainty scenarios, fairness/priority policies, reallocation rules, OR-Tools optimizer.  
+**Acceptance:** compare to FCFS and greedy baselines; preserve confirmed reservation guarantees.
+
+## Module 8 — Reservation and Payments
+**Submodules:** quote service, booking state machine, transactional hold/confirm, payment adapter, webhook verification, idempotency, cancellation, refunds, receipts, notifications.  
+**Acceptance:** payment and booking integration tests; replayed webhook does not double-charge or double-confirm.
+
+## Module 9 — Reviews and Trust Intelligence
+**Submodules:** eligible reviews, moderation, aggregate ratings, sentiment/themes, anomaly flags, dispute intake, provider trust indicators.  
+**Acceptance:** no fabricated reviews; AI flags are advisory and reviewable.
+
+## Module 10 — Multi-Agent Orchestration
+**Submodules:** LangGraph state, supervisor/router, specialist nodes, CrewAI bounded crews, typed agent contracts, retry/timeout, human approval, tool allowlists, traces and evaluation.  
+**Acceptance:** deterministic workflow tests; failures and tool calls are logged.
+
+## Module 11 — RAG, MCP and Predictive Intelligence
+**Submodules:** document ingestion, chunking, embeddings, retrieval, reranking, citations, MCP server/client integrations, demand forecasting, model evaluation, responsible AI.  
+**Acceptance:** retrieval answers cite sources; MCP tools have scopes; forecasts have held-out evaluation and uncertainty.
+
+## Module 12 — Administration, Testing and Deployment
+**Submodules:** admin console, user/provider moderation, disputes, operational analytics, audit views, CI, unit/integration/E2E tests, load/security testing, Docker, backups, monitoring, deployment and runbooks.  
+**Acceptance:** clean environment can deploy from documented steps; health checks and rollback procedures are tested.
+
+## Module dependencies
+
+1 -> 2 -> 3 -> 5  
+3 + 5 -> 4  
+4 + 5 -> 6  
+5 + 6 -> 7  
+1 + 5 + 7 -> 8  
+8 -> 9  
+4 + 5 + 6 + 8 + 9 -> 10  
+9 + 10 + operational data -> 11  
+All modules -> 12
+
+## Definition of done for every module
+
+- Code is in the correct module and reviewed.
+- Migration is reversible where practical.
+- API schema and error behavior are documented.
+- Authorization and validation are implemented.
+- Unit and integration tests pass.
+- Frontend is connected to real API behavior.
+- Logs and failure paths are present.
+- README/API docs are updated.
+- Manual execution evidence is captured.
+- Git commit is created.
+
+
+
+==========================================================================================
+FILE: docs/04_MULTI_AGENT_ARCHITECTURE.md
+==========================================================================================
+# 04 — Multi-Agent Architecture: LangGraph, CrewAI, RAG and MCP
+
+## 1. Architecture rule
+
+LangGraph is the primary workflow/state orchestrator. CrewAI is used only for bounded collaborative subtasks. Avoid two competing top-level orchestrators. Agents are not trusted sources of truth: application services and the database own inventory, pricing, bookings and payments.
+
+## 2. Twelve specialist agents
+
+| # | Agent | Responsibility | Preferred implementation |
+|---:|---|---|---|
+| 1 | Parking Intent Agent | Parse destination, time, vehicle and preferences | LLM structured extraction |
+| 2 | Location Intelligence Agent | Interpret place and invoke geospatial/routing tools | Geospatial API + LLM |
+| 3 | Availability Agent | Retrieve source-stamped availability | Deterministic service |
+| 4 | Parking Matching Agent | Enforce vehicle and provider constraints | Rules/optimizer |
+| 5 | Pricing Intelligence Agent | Compare total price and explain price factors | Pricing service + optional model |
+| 6 | Review Intelligence Agent | Summarize eligible reviews and themes | LLM with evidence |
+| 7 | Pooling Optimization Agent | Coordinate candidate allocation proposals | OR-Tools/optimization |
+| 8 | Booking Coordination Agent | Prepare reservation workflow and request confirmation | State machine + approval |
+| 9 | Navigation Agent | Provide route and walking directions | Routing provider |
+| 10 | Trust and Safety Agent | Surface risk signals and policy issues | Rules + anomaly detection |
+| 11 | Demand Prediction Agent | Forecast aggregate demand | Statistical/ML forecasting |
+| 12 | Customer Support Agent | Answer using policy RAG and booking context | LLM + RAG |
+
+## 3. Orchestrator workflow
+
+1. Receive user request.
+2. Intent agent produces validated structured requirements.
+3. Retrieve candidate facilities/spaces from PostGIS.
+4. Availability service checks schedules, exceptions, holds and bookings.
+5. Matching service applies hard constraints.
+6. Pricing and review services enrich eligible candidates.
+7. Optimizer/ranker creates ranked candidates.
+8. Explanation node creates evidence-backed rationale.
+9. User selects a candidate and explicitly confirms.
+10. Booking service performs transactional hold/confirmation.
+11. Payment adapter verifies payment if required.
+12. Navigation and notification tasks execute after confirmed booking.
+
+## 4. CrewAI bounded crews
+
+### Review analysis crew
+- Review collector: fetches eligible platform reviews.
+- Theme analyst: identifies recurring topics.
+- Trust analyst: identifies suspicious patterns for human review.
+- Summary writer: produces evidence-linked summary.
+
+### Provider onboarding research crew
+- Checklist agent: checks required fields.
+- Evidence summarizer: summarizes submitted documents.
+- Policy reviewer: identifies missing items.
+- Human reviewer: final approval.
+
+Crew outputs are advisory and structured. They do not independently approve providers or take irreversible actions.
+
+## 5. Typed agent result contract
+
+```json
+{
+  "agent": "parking_matching_agent",
+  "task_id": "task_102",
+  "status": "completed",
+  "candidate_space_ids": ["space_001", "space_002"],
+  "hard_constraints_checked": [
+    "vehicle_compatibility",
+    "time_window",
+    "provider_status"
+  ],
+  "evidence_refs": ["availability_query_88"],
+  "confidence": 0.91,
+  "requires_human_approval": false,
+  "warnings": []
+}
+```
+
+Do not rely on self-reported LLM confidence as calibrated probability. Calibrate confidence against evaluation data if it is used in decisions.
+
+## 6. RAG
+
+Use RAG for:
+- Parking policies and provider instructions.
+- Platform cancellation/refund rules.
+- User help documentation.
+- Safety/accessibility guidance.
+- Approved operational manuals.
+
+Pipeline: ingest -> parse -> chunk -> attach metadata/permissions -> embed -> retrieve -> optional rerank -> answer with citations.
+
+RAG must respect document access permissions. Retrieved documents are untrusted content, not executable instructions.
+
+## 7. MCP
+
+Use MCP to expose narrowly scoped tools such as:
+- `search_nearby_parking`
+- `get_space_availability`
+- `get_route_estimate`
+- `get_provider_policy`
+- `create_booking_quote`
+- `request_booking_hold` (with user authorization and server validation)
+
+Payment confirmation, refunds, provider approval and irreversible actions require backend controls and appropriate human/user approval. MCP is an integration protocol, not an authorization system by itself.
+
+## 8. Observability and safety
+
+Log workflow ID, agent, tool name, arguments after redaction, authorization context, result status, latency, token usage, errors and approval state. Do not log passwords, payment credentials, precise location history unnecessarily or full private documents.
+
+## 9. Agent evaluation
+
+Measure:
+- Task completion rate.
+- Structured output validity.
+- Tool selection accuracy.
+- Unsupported-claim rate.
+- Evidence/citation correctness.
+- Human override rate.
+- Mean and p95 workflow latency.
+- Token/API cost per successful task.
+- Recovery after timeout/tool failure.
+
+Compare against a non-agent deterministic baseline. More agents do not automatically mean better performance.
+
+
+
+==========================================================================================
+FILE: docs/05_TECH_STACK_AND_REPOSITORY.md
+==========================================================================================
+# 05 — Technology Stack, Repository and Local Setup
+
+## 1. Recommended stack
+
+| Layer | Recommended technology | Reason |
+|---|---|---|
+| Web UI | React + TypeScript + Vite | Mature web ecosystem |
+| UI styling | Tailwind CSS + accessible component library | Responsive UI |
+| Mobile approach | PWA first; Capacitor later if native bridge needed | Reuse frontend |
+| API | Python + FastAPI | Typed async-friendly API |
+| Validation | Pydantic | Request/response contracts |
+| ORM/migrations | SQLAlchemy + Alembic | Persistence and schema evolution |
+| Main database | PostgreSQL | Transactional source of truth |
+| Geospatial | PostGIS | Radius and spatial queries |
+| Cache/holds | Redis, with DB still authoritative | Fast ephemeral coordination |
+| Agent orchestration | LangGraph | Stateful workflow and human approval |
+| Bounded crews | CrewAI | Selected collaborative subtasks |
+| Optimization | Google OR-Tools | Constraint-based allocation |
+| Vector retrieval | Qdrant or pgvector | RAG retrieval |
+| Background jobs | Celery or task queue | Forecasting and asynchronous work |
+| Payments | Payment-provider adapter; evaluate Razorpay for India | Provider-specific payment handling |
+| Maps | Mappls or Google Maps adapter | Local coverage, terms and pricing must be validated |
+| Testing | Pytest, HTTPX, Vitest, Playwright, Locust | Layered quality |
+| Packaging | Docker Compose | Reproducible local deployment |
+| CI | GitHub Actions | Automated checks |
+
+Check current framework versions and provider pricing before pinning dependencies. Use lockfiles.
+
+## 2. Repository structure
+
+```text
+ParkPool_AI/
+├── frontend/
+│   └── src/
+│       ├── components/
+│       ├── features/
+│       │   ├── auth/
+│       │   ├── discovery/
+│       │   ├── listings/
+│       │   ├── availability/
+│       │   ├── pooling/
+│       │   ├── booking/
+│       │   ├── reviews/
+│       │   └── assistant/
+│       ├── pages/
+│       ├── services/
+│       ├── hooks/
+│       └── types/
+├── backend/
+│   └── app/
+│       ├── main.py
+│       ├── core/
+│       ├── api/
+│       ├── models/
+│       ├── schemas/
+│       ├── repositories/
+│       ├── services/
+│       ├── modules/
+│       └── ai/
+│           ├── agents/
+│           ├── orchestrator/
+│           ├── crews/
+│           ├── rag/
+│           ├── mcp/
+│           └── evaluation/
+├── database/
+│   ├── migrations/
+│   ├── seeds/
+│   └── initial_schema.sql
+├── docs/
+├── design/
+├── tests/
+├── docker/
+├── scripts/
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+└── README.md
+```
+
+## 3. Windows environment audit
+
+Run in PowerShell:
+
+```powershell
+Write-Host "=== PARKPOOL AI ENVIRONMENT AUDIT ==="
+Get-Location
+python --version
+node --version
+npm --version
+git --version
+docker --version
+psql --version
+code --version
+```
+
+A missing command is not fatal; install only what is missing. PostgreSQL must have PostGIS enabled for geospatial functionality. Docker Desktop is recommended for reproducible local services.
+
+## 4. Create repository
+
+```powershell
+New-Item -ItemType Directory -Force -Path "D:\projects\ParkPool_AI"
+Set-Location "D:\projects\ParkPool_AI"
+git init
+New-Item -ItemType Directory -Force -Path frontend,backend,database,docs,design,scripts,tests,docker
+```
+
+## 5. Frontend starter
+
+```powershell
+npm create vite@latest frontend -- --template react-ts
+Set-Location frontend
+npm install
+npm install react-router-dom axios lucide-react @tanstack/react-query
+```
+
+Add styling and map packages only after selecting the map provider and reviewing its current SDK instructions.
+
+## 6. Backend starter
+
+From project root:
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install fastapi "uvicorn[standard]" sqlalchemy alembic "psycopg[binary]" geoalchemy2 pydantic pydantic-settings pytest httpx
+```
+
+Add authentication, payment, AI, RAG and task-queue packages in their implementation phases. Pin tested versions in a requirements lock or `pyproject.toml`.
+
+## 7. Run starter API
+
+From `backend` directory, with `app/__init__.py` present:
+
+```powershell
+uvicorn app.main:app --reload --port 8000
+```
+
+Visit:
+- `http://localhost:8000/`
+- `http://localhost:8000/health`
+- `http://localhost:8000/docs`
+
+## 8. Environment and Git
+
+Create `.env` locally; commit only `.env.example` with placeholder names. Never commit real API keys, database passwords, payment secrets or tokens.
+
+Suggested `.gitignore`:
+```gitignore
+.venv/
+__pycache__/
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+.coverage
+.pytest_cache/
+*.log
+```
+
+
+
+==========================================================================================
+FILE: docs/06_UI_UX_PLAN.md
+==========================================================================================
+# 06 — UI/UX Design Plan
+
+## Design direction
+
+Brand: **ParkPool AI**  
+Tagline: **Smart parking. Shared possibilities.**  
+Visual direction: trustworthy, modern, map-first, accessible.  
+Suggested palette: deep navy `#102A43`, teal `#13B8A6`, off-white `#F4F7FA`, amber `#F4B942`. Verify contrast for all text and controls.
+
+The included showcase image is an illustrative concept board, not a screenshot of a functioning application. Prices, ratings, occupancy, review counts and dashboard metrics shown in mockups are fictional placeholders and must not be represented as live data.
+
+## Driver experience
+
+1. Landing page: destination search, driver/owner entry points, product explanation.
+2. Search results: map and list, filters, availability freshness, sort options.
+3. Parking detail: provider, photos, verified amenities, vehicle fit, policies, schedule, total price and eligible reviews.
+4. Booking checkout: date/time, vehicle, fees, cancellation terms, clear final confirmation.
+5. Booking status: reservation ID, verified state, route, support and cancellation.
+6. AI assistant: natural language search, ranked options, explanations and evidence links.
+7. Profile: vehicles, bookings, preferences, consent and account controls.
+
+## Provider experience
+
+1. Provider onboarding and authority verification.
+2. Facility creation and geolocation.
+3. Space listing, dimensions, amenities and photos.
+4. Schedule, blackout periods, owner-use windows and buffers.
+5. Pricing and cancellation policy.
+6. Booking calendar and occupancy.
+7. Earnings, payout status and reviews.
+8. Disputes and support.
+
+## Admin experience
+
+- User/provider verification queue.
+- Listing moderation and evidence review.
+- Booking/payment/refund monitoring.
+- Pool utilization and allocation exceptions.
+- Dispute management.
+- Agent workflow traces and failure dashboard.
+- Security/audit events.
+- Aggregate performance reports.
+
+## Navigation
+
+Driver: Home / Explore / Bookings / Saved / AI Assistant / Profile  
+Provider: Overview / Facilities / Spaces / Availability / Bookings / Earnings / Reviews  
+Admin: Overview / Users / Providers / Listings / Bookings / Payments / Pools / AI Monitoring / Reports
+
+## Accessibility and usability
+
+- Keyboard navigable controls.
+- Clear focus states and accessible labels.
+- Text contrast compliant with WCAG guidance.
+- Do not communicate status through color alone.
+- Avoid map-only interactions; provide an equivalent list.
+- Display fees and cancellation terms before payment.
+- Display data freshness and whether availability is live, provider-reported or inferred.
+
+
+
+==========================================================================================
+FILE: docs/07_IMPLEMENTATION_ROADMAP.md
+==========================================================================================
+# 07 — Implementation Roadmap and Development Protocol
+
+## Recommended sequence
+
+The 16-week outline is a planning estimate for a focused prototype, not a guarantee. Actual duration depends on experience, provider access, integrations and testing.
+
+| Phase | Indicative timing | Outcome |
+|---|---:|---|
+| 0. Environment and repository | 1–2 days | Reproducible dev environment |
+| 1. Identity and profiles | Week 1–2 | Auth, roles, vehicles |
+| 2. Provider authorization | Week 3 | Verified provider workflow |
+| 3. Inventory/listings | Week 4 | Facilities and spaces |
+| 4. Discovery | Week 5–6 | PostGIS search and map |
+| 5. Availability | Week 7 | Schedules, holds and conflicts |
+| 6. Pooling optimizer | Week 8–9 | Time-window matching |
+| 7. Booking/payments | Week 10–11 | Reservation state machine |
+| 8. Reviews/recommendations | Week 12 | Trust and ranking |
+| 9. Agent orchestration | Week 13–14 | LangGraph and bounded crews |
+| 10. RAG/MCP/prediction | Week 15 | Knowledge and tools |
+| 11. Admin/testing/deploy | Week 16+ | Release candidate and evidence |
+
+## Required coding loop
+
+For each module, the assistant must:
+1. Explain objective, dependencies and acceptance criteria.
+2. Inspect current repository files and existing code before proposing changes.
+3. Give exact file paths and complete file contents for new files.
+4. For edits, preserve existing working behavior and show precise changes.
+5. Give commands for the correct terminal and working directory.
+6. Ask the developer to execute and paste full errors/logs.
+7. Diagnose actual errors; do not assume commands succeeded.
+8. Add tests before declaring completion.
+9. Verify database migration and frontend/backend integration.
+10. Update docs and Git commit instructions.
+
+## Module completion checklist
+
+- [ ] Source code implemented
+- [ ] Database migration applied
+- [ ] API contracts documented
+- [ ] Input validation and authorization tested
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Frontend connected
+- [ ] Error and empty states implemented
+- [ ] Logs/observability present
+- [ ] Documentation updated
+- [ ] Execution evidence captured
+- [ ] Git commit created
+
+## Milestone gates
+
+Do not proceed to the next dependent module if a critical invariant is broken. In particular, no AI agent work should be allowed to hide an unreliable booking/availability core. Implement deterministic search, schedules, holds and booking integrity before advanced agent workflows.
+
+## First task
+
+Run the environment audit in `05_TECH_STACK_AND_REPOSITORY.md` and paste the output. Based on the actual installed tools, create the repository and start the health-check API.
+
+
+
+==========================================================================================
+FILE: docs/08_TESTING_AND_EVALUATION.md
+==========================================================================================
+# 08 — Testing and Performance Evaluation
+
+## 1. Test layers
+
+| Type | Focus | Tools |
+|---|---|---|
+| Unit | validators, scoring, schedule logic, services | Pytest, Vitest |
+| API | HTTP status, schemas, authorization | HTTPX |
+| Integration | database, cache, payment adapter sandbox | Pytest + PostgreSQL |
+| E2E | driver/provider/admin journeys | Playwright |
+| Concurrency | simultaneous holds and bookings | PostgreSQL tests, Locust |
+| Agent | tool choice, structured outputs, retries | Custom harness |
+| RAG | retrieval relevance, groundedness, citations | RAGAS/custom evaluation |
+| Security | auth, access control, injection, secrets | Static and dynamic checks |
+| Load | search/booking throughput and latency | Locust |
+| Deployment | health, restart, backup and restore | Docker and runbooks |
+
+## 2. Essential invariants
+
+- Never have two confirmed overlapping bookings for the same physical space, including required buffers.
+- A held booking expires reliably.
+- Payment webhook replay is idempotent.
+- A cancelled/expired booking releases inventory correctly.
+- Unauthorized provider data is inaccessible.
+- A provider cannot list a space without recorded authority.
+- An AI tool cannot bypass application authorization.
+- A recommendation cannot rank a hard-incompatible space as bookable.
+- A confirmed booking is not silently reallocated.
+
+## 3. Recommendation baselines
+
+Compare:
+A. Distance-only  
+B. Rule-based weighted ranking  
+C. Single-agent recommendation  
+D. Multi-agent recommendation  
+E. Multi-agent recommendation plus pooling optimizer
+
+Hard constraints (vehicle compatibility, schedule, provider authorization, confirmed inventory) must be applied before scoring.
+
+Example normalized score:
+`score = 0.25*distance_fit + 0.25*price_fit + 0.20*amenity_safety_fit + 0.15*review_fit + 0.15*availability_fit`
+
+Weights are initial hypotheses. Tune on a validation set and report sensitivity. Do not use an opaque LLM score as the only ranking method.
+
+## 4. Pooling experiments
+
+Compare:
+- First-come-first-served.
+- Greedy best-fit.
+- Weighted bipartite matching.
+- Rolling-horizon optimization.
+- Proposed uncertainty-aware allocation.
+
+Metrics:
+- Request match/fulfilment rate.
+- Space utilization.
+- Average and p95 walking distance.
+- Allocation computation time.
+- Conflict rate.
+- Provider constraint violations (target zero).
+- Reallocation frequency.
+- User/provider satisfaction.
+- Revenue or social welfare, if defined transparently.
+
+## 5. Forecast evaluation
+
+Use chronological train/validation/test splits to avoid leakage. Compare a seasonal naive baseline with suitable statistical/ML models. Report MAE, RMSE and forecast intervals/coverage where appropriate. Do not claim prediction quality without held-out data.
+
+## 6. Agent and RAG evaluation
+
+Agent:
+- Task success rate.
+- Schema-valid output rate.
+- Correct tool selection.
+- Unsupported-claim rate.
+- Evidence correctness.
+- Retry/recovery rate.
+- p50/p95 latency.
+- Token and API cost per successful task.
+- Human escalation rate.
+
+RAG:
+- Recall@k / precision@k where labels exist.
+- Answer groundedness.
+- Citation correctness.
+- Unsupported answer rate.
+- Permission leakage tests.
+
+## 7. Reporting
+
+For every experiment record:
+- Dataset source and license.
+- Synthetic vs real data label.
+- Hardware/software versions.
+- Configuration and random seed.
+- Baseline definition.
+- Sample size.
+- Metrics and confidence intervals where appropriate.
+- Limitations and reproducibility instructions.
+
+A separate performance report should contain results, plots, tables and error analysis. Never invent results for the report.
+
+
+
+==========================================================================================
+FILE: docs/09_SECURITY_RESPONSIBLE_AI.md
+==========================================================================================
+# 09 — Security, Privacy and Responsible AI
+
+## 1. Physical-world and property authorization
+
+- Require evidence that a host/community/operator has authority to offer the space.
+- Clearly define access instructions, permitted vehicle types, operating hours and owner-use windows.
+- Never infer that an empty driveway or apartment slot is available for public rental.
+- Do not implement gate unlocking or access-code release without explicit owner/provider authorization and secure integration.
+- Define incident, damage, no-show, dispute and emergency procedures with legal review.
+
+## 2. AI boundaries
+
+- AI may interpret requests, retrieve information, compare options and explain recommendations.
+- AI must not invent availability, price, ratings, safety claims or provider approval.
+- AI must not confirm a booking or payment based only on its own generated text.
+- Sensitive/irreversible operations require explicit user confirmation and backend validation.
+- Treat user text, reviews, uploaded documents and RAG results as untrusted input.
+- Restrict tools to allowlisted actions and least privilege.
+- Record agent actions and approval decisions.
+
+## 3. Application security
+
+- Password hashing using a modern password hashing scheme.
+- Secure session/refresh-token handling and revocation.
+- Role- and resource-level authorization.
+- HTTPS in deployed environments.
+- Rate limits and abuse protection.
+- Input validation and output encoding.
+- Parameterized database queries.
+- File type/size scanning and safe object storage.
+- Webhook signature verification and idempotency.
+- Secret manager/environment configuration.
+- Dependency and container scanning.
+- Backups, restore tests and incident response.
+
+## 4. Location and personal data
+
+- Ask for location permission when needed and explain why.
+- Allow destination search without continuous location tracking.
+- Minimize retention of precise location history.
+- Restrict location visibility to the purpose and role.
+- Define retention, deletion and access-request workflows.
+- Avoid exposing private residential addresses before an authorized booking stage.
+- Assess applicable Indian data-protection law and rules with qualified counsel before launch.
+
+## 5. Fairness and explainability
+
+- Do not use protected or sensitive personal characteristics for parking ranking.
+- Make ranking factors visible and configurable.
+- Explain why candidates were excluded by hard constraints.
+- Provide a route/list alternative to map-only access.
+- Audit provider and user complaint patterns.
+- Keep AI-generated risk flags advisory and allow human review.
+
+## 6. Payments
+
+Use a regulated payment provider; do not store raw card credentials. Verify signed webhooks server-side, use idempotency keys, reconcile provider transaction state and keep booking/payment state transitions separate. Production rollout requires provider terms, tax/accounting and consumer-protection review.
+
+
+
+==========================================================================================
+FILE: docs/10_MASTER_DEVELOPMENT_PROMPT.md
+==========================================================================================
+# 10 — Master Development Prompt for ParkPool AI
+
+You are the senior software architect, full-stack engineer, database engineer, AI engineer, QA lead and technical mentor for **ParkPool AI**.
+
+## Project identity
+
+ParkPool AI is an explainable, multi-agent coordination and optimization platform for distributed shared parking inventory. The basic parking marketplace concept already exists. Do not claim the project is the first parking marketplace, first shared-parking product or first multi-agent parking allocation system. The proposed contribution is the integrated implementation and measured evaluation of distributed provider coordination, authorized time-window pooling, uncertainty-aware allocation, hybrid agentic/optimization workflows and explainable recommendations.
+
+## Required working style
+
+1. Work in phases and modules; never attempt to generate the whole application in one response.
+2. Before editing, inspect the actual repository and relevant files. Ask the user to paste directory listings or file contents if you cannot inspect them.
+3. Preserve existing code. Never assume a file is empty or overwrite a working implementation without explaining the impact.
+4. Give complete, runnable code with exact paths. Avoid disconnected fragments.
+5. State the terminal, working directory and commands for every execution step.
+6. Explain what the code does and why it belongs in that module.
+7. Ask the user to run commands and paste actual output. Do not claim code ran or tests passed without evidence.
+8. Debug from the actual error, traceback and environment; do not guess silently.
+9. Add unit/integration tests and acceptance criteria for every module.
+10. Update README, API docs, schema diagrams and progress status.
+11. Recommend a Git commit after a verified milestone.
+12. Keep a concise record of completed modules, current branch, migrations and known issues in the project documentation.
+
+## Technical architecture
+
+- Frontend: React + TypeScript + Vite.
+- Backend: Python + FastAPI.
+- Database: PostgreSQL + PostGIS.
+- ORM/migrations: SQLAlchemy + Alembic.
+- Workflow orchestration: LangGraph.
+- Bounded collaborative subtasks: CrewAI.
+- Optimization: OR-Tools or justified equivalent.
+- RAG: permission-aware retrieval using Qdrant or pgvector.
+- Integrations: scoped MCP tools.
+- Cache/ephemeral coordination: Redis, with PostgreSQL authoritative for bookings.
+- Deployment: Docker Compose initially.
+- Testing: Pytest, HTTPX, Vitest, Playwright and Locust.
+
+## Non-negotiable engineering rules
+
+- Database/backend is the source of truth for availability, price, bookings and payments.
+- LLM agents cannot invent or confirm those facts.
+- Enforce no-overlap reservation invariants transactionally in PostgreSQL.
+- Respect provider permission, schedules, exceptions, buffers and owner-use windows.
+- Use server-side pricing and payment verification.
+- Protect user and provider data with least-privilege authorization.
+- Log agent/tool actions with redaction.
+- Human confirmation for sensitive/irreversible actions.
+- Do not fabricate datasets, metrics, reviews, research novelty or test results.
+- Distinguish illustrative mockups and synthetic data from real product evidence.
+
+## Twelve modules
+
+1. Identity and user management.
+2. Provider and property authorization.
+3. Parking inventory and listings.
+4. Geospatial discovery.
+5. Availability and scheduling.
+6. Recommendation intelligence.
+7. Pooling and optimization.
+8. Reservation and payments.
+9. Reviews and trust intelligence.
+10. Multi-agent orchestration.
+11. RAG, MCP and predictive intelligence.
+12. Administration, testing and deployment.
+
+## Twelve specialist agents
+
+1. Parking Intent Agent.
+2. Location Intelligence Agent.
+3. Availability Agent.
+4. Parking Matching Agent.
+5. Pricing Intelligence Agent.
+6. Review Intelligence Agent.
+7. Pooling Optimization Agent.
+8. Booking Coordination Agent.
+9. Navigation Agent.
+10. Trust and Safety Agent.
+11. Demand Prediction Agent.
+12. Customer Support Agent.
+
+Not every agent needs an LLM. Use deterministic services for exact constraints and transactions. LangGraph is the primary orchestrator; CrewAI is reserved for bounded collaborative tasks.
+
+## Response format for each development milestone
+
+A. Goal and user-visible outcome.  
+B. Dependencies and architecture.  
+C. Files to create/change.  
+D. Complete code, one file at a time or in a coherent batch.  
+E. Installation/configuration commands.  
+F. Run commands with working directory.  
+G. Expected output (clearly labeled as expected, not observed).  
+H. Tests and acceptance criteria.  
+I. Common errors and debugging steps.  
+J. What evidence the user must paste back.  
+K. Git commit suggestion.  
+L. Updated progress and next milestone.
+
+## First action
+
+Start with Phase 0: ask for the PowerShell environment audit and current project directory state. Then initialize the repository and a minimal FastAPI health endpoint. Do not begin advanced AI modules until database, availability and booking foundations are reliable.
+
+
+
+==========================================================================================
+FILE: docs/11_OPERATIONS_PILOT_AND_BUSINESS.md
+==========================================================================================
+# 11 — Operations, Pilot, Business Model and Risk Register
+
+## 1. Pilot strategy
+
+Start with one compact destination cluster in Bengaluru, not the entire city. The handover recommends a commercial-property-first pilot with approximately 3–5 authorized property partners. This is a recommendation to reduce access and trust complexity; it does not permanently exclude residential providers.
+
+### Pilot supply
+- Prefer managed commercial properties or authorized parking operators at the beginning.
+- Obtain written permission from the property owner/manager and document the exact spaces and hours that may be offered.
+- Manually verify a small inventory before public bookings.
+- Confirm access arrangements with security staff and property operations.
+- Keep a human support contact available during pilot hours.
+
+### Pilot demand
+Interview 15–20 drivers with recurring needs near the selected destination. Interview 10–15 private-space owners or apartment representatives and 5–10 commercial operators. These are suggested research sample sizes, not existing completed interviews.
+
+## 2. Driver journey and operating controls
+
+| Stage | Driver action | System/operations control |
+|---|---|---|
+| Discover | Enter destination/date/time | Show approved spaces and data freshness |
+| Compare | Review price, route, entrance, fit | Pedestrian route and entrance evidence |
+| Book | Select slot and vehicle | Server quote, policy disclosure, transactional hold |
+| Confirm | Pay/confirm | Verified payment state; no AI-only confirmation |
+| Navigate | Follow route | Route to actual entrance, not only centroid |
+| Arrive | Present code/QR if enabled | Host/property controls entry; log verification event |
+| Park | Begin session | Record start time and any issue |
+| Extend | Request extra time | Only if next booking/owner block allows and host approves where required |
+| Leave | Check out before hard deadline | Record departure and session completion |
+| Close | Receipt/review/report | Reconcile payment/refund and incident workflow |
+
+QR or booking-code verification is a proposed control, not a guarantee of physical security.
+
+## 3. Host/provider journey
+
+1. Register provider and select provider type.
+2. Submit identity/business details and evidence of authority.
+3. Submit facility details and exact spaces.
+4. Provide dimensions, restrictions, photographs and access instructions.
+5. Define availability schedule, blackout periods and owner-use windows.
+6. Set buffer and hard latest departure time.
+7. Set price and cancellation/extension rules.
+8. Admin reviews evidence and activates only authorized inventory.
+9. Host monitors bookings, arrival, checkout, earnings and incidents.
+10. Host can block future availability under published cancellation rules.
+
+Community managers must provide evidence that they have authority under applicable property/community rules.
+
+## 4. Critical operational policies to define before live bookings
+
+### A. Host authority and property permissions
+- What documents establish ownership or permission?
+- Does an apartment association, landlord or commercial property manager need to approve?
+- Which property rules prohibit outside visitors or commercial use?
+- How often must authorization be revalidated?
+- Who can revoke a listing and how are future bookings handled?
+
+### B. Access mismatch
+- Who greets or authorizes the driver at gated properties?
+- What if a security guard has not received the booking?
+- What if the actual entrance differs from the map pin?
+- Is there an on-call escalation number?
+- What refund/compensation policy applies when access fails?
+
+### C. Late departure and overstay
+The source handover raises a specific example: a host rents a space until 6 PM but the driver remains at 7 PM while the host needs the space at 6:15 PM.
+
+Proposed controls:
+- fixed slots;
+- host-defined buffer before the host needs the space;
+- hard latest departure time shown before booking;
+- reminders before expiry;
+- extensions only when the host explicitly approves and no conflicting reservation exists;
+- overstay fees and escalation rules disclosed before booking;
+- support escalation and incident logging.
+
+Unresolved:
+- lawful remedies if a vehicle remains after the deadline;
+- liability for host losses;
+- emergency access;
+- whether any towing/clamping remedy is lawful and who may authorize it.
+
+Do not assume the host may forcibly move or tow a vehicle. Obtain qualified local legal advice and never encourage unsafe confrontation.
+
+### D. Security and suspicious activity
+The source handover explicitly raises the possibility that a vehicle could contain dangerous or illegal items. Platform controls may include:
+- verify host and authority;
+- collect only proportionate booking and vehicle details;
+- controlled access/check-in records;
+- suspicious-activity reporting and emergency process;
+- staff training and documented escalation.
+
+The platform cannot security-clear a vehicle and must not promise that misuse is impossible. Hosts should not inspect dangerous contents or handle a suspected device. Keep people away and contact emergency services/police (112 in India) if there is an immediate threat. Confirm emergency guidance with local counsel/authorities before launch.
+
+### E. Walking distance and route acceptability
+The handover questions whether users will walk 300–500 metres. It mentions 6–8 minutes for 500 metres as an estimate only, not validated customer behavior.
+
+Show:
+- actual pedestrian route;
+- walking time estimate and its source;
+- lighting/accessibility/safe-path attributes where verified;
+- correct parking entrance;
+- weather/covered-path information only where reliable.
+
+Test willingness by destination, time of day, price difference, mobility needs, luggage and family travel. Do not assume a universal acceptable radius.
+
+### F. Space suitability
+Record dimensions, height restrictions, vehicle class, turning/access restrictions and charging/covered attributes. Do not recommend an incompatible space even if its score is otherwise high.
+
+### G. Double booking and stale inventory
+- Centralize booking inventory in the authoritative database.
+- Use transactional holds and exclusion constraints/locking.
+- Define inventory synchronization with any external listing channel.
+- Display availability source and last-updated time.
+- Expire abandoned holds.
+
+### H. Damage, theft and disputes
+Define evidence capture, check-in/out condition records where proportionate, support workflow, dispute time windows, responsibility and insurance terms. Do not imply that a rating system substitutes for legal protection.
+
+### I. Emergency access
+Never allow a listing or allocation that blocks fire exits, emergency lanes, ramps or required circulation paths. Require property-specific approval and periodic audits.
+
+## 5. Business model hypotheses
+
+Possible revenue:
+- commission on completed bookings;
+- provider subscription for inventory and analytics;
+- enterprise/community management subscription;
+- optional promoted listing with clear labeling;
+- privacy-protected aggregate utilization analytics for authorized customers.
+
+A 20% platform commission appeared in the brainstorming handover only as an illustrative example. It is not a chosen or validated rate.
+
+### Unit economics model
+
+For each completed booking calculate:
+
+`Contribution = platform revenue - payment fees - host incentives - refunds/chargebacks - support cost - verification/operations allocation - insurance allocation - taxes - acquisition cost allocation`
+
+Track:
+- average booking value;
+- platform take rate;
+- host payout;
+- payment gateway fee;
+- refund/cancellation rate;
+- support contacts per booking;
+- provider acquisition cost;
+- customer acquisition cost;
+- repeat booking rate;
+- contribution margin.
+
+Do not finalize pricing until provider interviews, customer tests and payment/tax review are complete.
+
+## 6. Pilot metrics
+
+| Metric | Definition |
+|---|---|
+| Search-to-book conversion | Confirmed bookings / eligible search sessions |
+| Booking completion | Completed sessions / confirmed bookings |
+| Failed entry rate | Bookings where access fails / arrivals |
+| Late departure rate | Sessions past hard deadline / completed sessions |
+| Cancellation rate | Cancelled bookings / confirmed bookings |
+| No-show rate | No-show bookings / confirmed bookings |
+| Walking-distance tolerance | Distribution of accepted route distance/time |
+| Repeat use | Customers with repeat completed bookings |
+| Host satisfaction | Surveyed host score and retention |
+| Space utilization | Occupied eligible minutes / offered eligible minutes |
+| Match rate | Requests assigned a feasible space / valid requests |
+| Conflict rate | Allocation/booking conflicts per 1,000 bookings |
+| Contribution margin | Contribution per completed booking |
+
+## 7. Risk register
+
+| Risk | Impact | Mitigation / open work |
+|---|---|---|
+| No legal authority to list | Property dispute, takedown | Evidence review and legal policy |
+| Entry denied | Failed customer journey | Access protocol, verified entrance, support |
+| Overstay | Host disruption | Hard deadline, buffers, reminders, lawful escalation |
+| Vehicle misuse | Physical/legal harm | Proportionate controls, incident plan, no security guarantee |
+| Theft/damage | Financial/legal dispute | Insurance review, condition process, clear terms |
+| Double booking | Customer/host conflict | DB constraints, holds, inventory synchronization |
+| Poor route/walking tolerance | Low conversion | Pedestrian routing and user research |
+| Thin supply | Marketplace fails to match | Destination-cluster pilot and partner acquisition |
+| Forecast error | Bad planning | Hold-out evaluation, uncertainty display |
+| AI hallucination | Wrong advice or promise | Grounded tools, source references, backend authority |
+| Payment dispute | Financial loss | Gateway controls, webhook verification, reconciliation |
+| Data breach | Privacy harm | Minimize data, RBAC, encryption, retention controls |
+
+## 8. Legal and compliance work
+
+Obtain qualified Indian legal, tax, insurance and security advice on:
+- property permissions and commercial-use restrictions;
+- host/platform/customer responsibilities;
+- consumer protection, cancellation and grievance handling;
+- applicable Digital Personal Data Protection framework and rules;
+- payments, taxes, invoicing and settlements;
+- insurance coverage and exclusions;
+- lawful access, overstay and emergency procedures;
+- law-enforcement escalation and data disclosure.
+
+This document is not legal advice. Do not accept public real-money bookings until these issues and the applicable provider terms are reviewed.
+
+
+
+==========================================================================================
+FILE: docs/12_COMPARISON_AND_DECISION_LOG.md
+==========================================================================================
+# 12 — Source Comparison and Combined-Project Decisions
+
+## 1. Source ideas
+
+### Source A: Parking Pooling System — Project Handover & Discussion Summary
+A location-based marketplace connecting drivers with people/organizations offering legally usable, underutilized parking spaces. Its strongest detail is the real-world operating journey: destination search, comparison by actual entrance/walking route, time-slot booking, access verification, parking session, checkout, payment/receipt and feedback. It explicitly raises host authorization, access mismatch, late departure, vehicle misuse, walking distance, damage/theft, emergency access, privacy, insurance and pilot unit economics.
+
+### Source B: ParkPool AI — Complete Project Pack
+A proposed autonomous shared-parking coordination platform with 12 modules and 12 specialist agents. It adds geospatial discovery, time-window pooling, mathematical optimization, uncertainty-aware allocation, explainable recommendations, demand prediction, RAG, MCP, algorithmic evaluation and a hybrid agent/optimizer/backend architecture.
+
+## 2. Shared foundation
+
+| Shared idea | Meaning |
+|---|---|
+| Underused parking supply | Make authorized idle capacity discoverable |
+| Driver/provider marketplace | Connect demand with host inventory |
+| Destination search | Find parking near a target place |
+| Geospatial discovery | Map, distance and route-based comparison |
+| Time-based availability | Space is available only for defined intervals |
+| Provider trust | Verify host and authority |
+| Booking/payment | Reserve and pay for a selected space |
+| Admin operations | Handle verification, disputes and support |
+| Utilization goal | Use parking capacity more effectively |
+
+The basic marketplace is not the differentiator by itself.
+
+## 3. Main differences
+
+| Area | Source A | Source B | Combined decision |
+|---|---|---|---|
+| Product emphasis | Practical marketplace and operating model | AI coordination architecture | Marketplace first, intelligence layer second |
+| Frontend | Next.js + TypeScript suggestion | React + TypeScript + Vite | Choose React + Vite for the baseline; Next.js remains a viable alternative |
+| Backend | FastAPI | FastAPI | Keep FastAPI |
+| Database | PostgreSQL + PostGIS | PostgreSQL + PostGIS | Keep PostgreSQL/PostGIS |
+| Mapping | Actual pedestrian route and entrance emphasized | Geospatial/routing adapter | Preserve entrance-specific pedestrian routing |
+| Provider verification | Detailed operational concern | Authorization module | Make authority verification a hard publication gate |
+| Access | QR/code, property-controlled access | Navigation and tool integration | Keep QR as optional; property remains access authority |
+| Host buffers/deadline | Explicit operational rules | Scheduling constraints | Make them first-class scheduling constraints |
+| Overstay | Explicit risk and open legal question | Scheduling/conflict handling | Preserve policy, reminders and lawful escalation work |
+| Vehicle misuse | Explicit safety concern | Trust/safety agent | Preserve emergency process; no security-clearance claim |
+| Optimization | Not specified | OR-Tools proposal | Add constrained optimizer and compare baselines |
+| Multi-agent AI | Not specified | 12 agents | Add only after reliable deterministic core |
+| RAG/MCP | Not specified | Proposed | Advanced release, scoped permissions |
+| Demand prediction | Not specified | Proposed | Only after sufficient historical data |
+| Evaluation | Pilot/business metrics | Algorithm and agent benchmarks | Evaluate both operational and algorithmic performance |
+
+## 4. Adopted differentiators
+
+1. **Distributed authorized provider coordination:** independent providers, communities and commercial facilities contribute authorized inventory to a common coordination layer.
+2. **Time-window pooling:** multiple non-overlapping reservations can use one physical space with buffers and owner-use blocks.
+3. **Uncertainty-aware allocation:** simulate and respond to changes in arrival/departure, cancellations and supply withdrawal without silently breaking confirmed bookings.
+4. **Hybrid intelligence:** agents interpret and explain; deterministic services validate; optimizer proposes; backend commits.
+5. **Evidence-grounded explainability:** recommendations trace to actual data and explicit ranking factors.
+6. **Measured performance:** compare utilization, match rate, walking distance, conflict rate, latency and operating cost against baselines.
+
+## 5. Operational features retained from Source A
+
+- Commercial-property-first pilot recommendation with 3–5 authorized partners.
+- Manual provider and inventory verification at pilot stage.
+- Exact entrance and pedestrian route.
+- Host buffers and hard departure deadlines.
+- Host-approved extensions.
+- Disclosed overstay/cancellation rules.
+- QR or booking code only with property cooperation.
+- Support and incident reporting.
+- Insurance/legal review.
+- Walking-distance acceptance research.
+- Unit economics and contribution margin analysis.
+
+## 6. Technology decision
+
+The source handover suggests Next.js + TypeScript, while ParkPool AI suggests React + TypeScript + Vite. These are alternative frontend setups. The combined baseline chooses React + TypeScript + Vite for a straightforward web app and keeps FastAPI, PostgreSQL/PostGIS, SQLAlchemy/Alembic, Redis, LangGraph, CrewAI, OR-Tools, Qdrant/pgvector and Docker Compose from the ParkPool AI baseline. Map and payment vendors must be selected after current coverage, cost, legal and technical review.
+
+## 7. Decisions versus unresolved questions
+
+### Adopted project decisions
+- Product is a shared-parking marketplace plus coordination platform.
+- Backend/database is the source of truth.
+- Provider authority must be verified.
+- Confirmed bookings cannot be silently reallocated.
+- Commercial-first pilot is the recommended starting point.
+- Build modular monolith first.
+- Deterministic scheduling/booking comes before multi-agent AI.
+
+### Not decided or validated
+- Exact pilot destination and partners.
+- Final provider eligibility and evidence documents.
+- Exact commission/take rate; 20% was illustrative only.
+- Acceptable walking distance; 300–500 m is a research question.
+- Insurance and liability allocation.
+- Legal overstay remedies.
+- Map/routing and payment vendor.
+- Whether to permit private residential inventory in the first pilot.
+- Whether the full 12-agent design is justified by evaluation.
+- Whether the integrated design is novel relative to all prior art.
+
+## 8. Overall assessment
+
+Source A is the practical product and operations foundation. Source B is the proposed technical and research evolution. The combined project is stronger because it does not sacrifice real-world reliability for AI sophistication. Its core technical proposition is constrained coordination of authorized distributed parking inventory, with measurable results.
+
+
+
+==========================================================================================
+FILE: docs/13_REQUIREMENTS_TRACEABILITY.md
+==========================================================================================
+# 13 — Requirements Traceability Matrix
+
+This matrix connects the combined requirements to modules and verification evidence. It is a planning artifact; completion status must be updated only after implementation and test evidence.
+
+| ID | Requirement | Module(s) | Verification evidence |
+|---|---|---|---|
+| R-01 | User registration, roles and vehicle profiles | 1 | Auth/API and resource isolation tests |
+| R-02 | Provider identity and authority evidence | 2 | Approval workflow and unauthorized listing tests |
+| R-03 | Facility/space inventory and dimensions | 3 | CRUD, validation and provider isolation tests |
+| R-04 | Destination and nearby geospatial search | 4 | PostGIS query tests and route adapter tests |
+| R-05 | Exact entrance and pedestrian route | 4 | Route fixture/manual route validation |
+| R-06 | Recurring schedules and exceptions | 5 | Timezone, exception and schedule tests |
+| R-07 | Buffers and owner-use blocks | 5, 7 | Boundary and overlap tests |
+| R-08 | Booking holds and expiry | 5, 8 | Expiry and concurrent hold tests |
+| R-09 | No overlapping confirmed reservations | 5, 8 | PostgreSQL concurrency/exclusion tests |
+| R-10 | Vehicle compatibility hard constraints | 3, 6, 7 | Incompatible candidate exclusion tests |
+| R-11 | Evidence-backed recommendation ranking | 6 | Ranking fixtures and explanation provenance tests |
+| R-12 | Shared pool membership and time-window allocation | 7 | Optimizer unit/integration tests |
+| R-13 | Controlled reallocation under uncertainty | 7 | Scenario simulation and confirmed-booking invariants |
+| R-14 | Server-side quotes and payment verification | 8 | Payment sandbox/webhook idempotency tests |
+| R-15 | Check-in/check-out and access audit | 8, 12 | State transition and audit tests |
+| R-16 | Eligible reviews and summaries | 9 | Booking eligibility and provenance tests |
+| R-17 | Agent orchestration and tool allowlists | 10 | Workflow tests, permission tests, traces |
+| R-18 | Policy RAG with citations | 11 | Retrieval and citation correctness tests |
+| R-19 | Scoped MCP integrations | 11 | Tool authorization and misuse tests |
+| R-20 | Demand forecasts with held-out evaluation | 11 | Chronological test split and baseline report |
+| R-21 | Admin verification, disputes and audit | 12 | Admin role/E2E tests |
+| R-22 | Operational pilot metrics | 12 | Event definitions and pilot dashboard reconciliation |
+| R-23 | Emergency/incident process | 12 + operations | Tabletop exercise and approved runbook |
+| R-24 | Privacy and retention controls | 1, 2, 12 | Access/deletion/retention tests and review |
+
+## Release gates
+
+### Gate A — Before any public listing
+Provider authority, listing moderation, access instructions, data privacy and incident contact process are operational.
+
+### Gate B — Before accepting bookings
+Availability source is reliable, booking conflicts are prevented, policies are visible, payment/confirmation behavior is tested, support is staffed.
+
+### Gate C — Before advanced optimization
+Baseline scheduling works; all hard constraints are formalized; test data and metrics are defined.
+
+### Gate D — Before AI agents
+Deterministic search, availability, pricing and booking services are stable; tool authorization and audit are in place.
+
+### Gate E — Before production payments
+Legal, tax, payment-provider, security, insurance and consumer policy reviews are completed.
+
+
+
+==========================================================================================
+FILE: docs/GLOSSARY.md
+==========================================================================================
+# Glossary
+
+- **Host/provider:** Person or organization authorized to offer a parking space.
+- **Facility:** Property/site containing one or more parking spaces.
+- **Parking space/bay:** Physical unit that can be reserved.
+- **Pool:** Group of spaces made available for coordinated allocation under agreed rules.
+- **Time window:** Start/end interval requested by a driver or offered by a provider.
+- **Buffer:** Non-bookable time reserved between sessions or before owner use.
+- **Owner-use block:** Period when a provider reserves the space for its own use.
+- **Booking hold:** Temporary inventory reservation pending confirmation/payment.
+- **Confirmed booking:** Reservation committed by the backend after all required checks.
+- **Hard constraint:** Requirement that must be satisfied; cannot be offset by a higher recommendation score.
+- **Soft preference:** Ranking preference such as price or walking distance.
+- **Rolling-horizon optimization:** Recompute future allocations as new information arrives, while protecting already confirmed reservations.
+- **Uncertainty-aware allocation:** Evaluate uncertain arrivals/departures and supply changes using scenarios or probabilistic estimates.
+- **LangGraph:** Proposed stateful workflow orchestration framework for agent steps.
+- **CrewAI:** Proposed framework for bounded collaborative agent tasks.
+- **OR-Tools:** Constraint optimization toolkit proposed for allocation.
+- **RAG:** Retrieval-augmented generation; answers use retrieved approved knowledge with citations.
+- **MCP:** Model Context Protocol; a tool integration protocol, not an authorization system.
+- **PostGIS:** PostgreSQL extension for geospatial data and queries.
+- **PWA:** Progressive Web App.
+
+
+
+==========================================================================================
+FILE: research/REFERENCES.md
+==========================================================================================
+# Preliminary Research and Competitor References
+
+Research snapshot prepared 19 November 2026. This is a preliminary discovery list, not an exhaustive market, patent or academic prior-art search. Check current pages, publication details and terms before formal citation.
+
+## Direct/local competitor
+
+1. **ParkSaathi — Google Play listing**  
+   https://play.google.com/store/apps/details?id=com.parksaathi.app  
+   Search result describes private residential parking, hosts listing spaces and setting prices, hourly booking requests, UPI payment on arrival, and launch focus in Bengaluru. This is a direct overlap with the original simple marketplace idea.
+
+2. **ParkSaathi website**  
+   https://parksaathi.app/  
+   Verify current product status, terms, service area and feature claims directly.
+
+## Global parking marketplaces and information
+
+3. **SpotHero**  
+   https://spothero.com/  
+   Parking search/reservation marketplace; verify current product scope.
+
+4. **JustPark**  
+   https://www.justpark.com/  
+   Private driveway and commercial parking marketplace; verify current product scope.
+
+5. **Parkopedia**  
+   https://www.parkopedia.com/  
+   Parking information and discovery platform; verify current product scope.
+
+## Research literature
+
+6. **A Multi-Agent System for Parking Allocation: An Approach to Allocate Parking Spaces**  
+   Electronics, 2025.  
+   https://www.mdpi.com/2079-9292/14/5/840  
+   Describes vehicle and parking-space agents interacting through negotiation protocols to allocate spaces.
+
+7. **Data-Driven Robust Optimal Allocation of Shared Parking Spaces Strategy Considering Uncertainty of Public Users’ and Owners’ Arrival and Departure: An Agent-Based Approach**  
+   IEEE Access, 2020.  
+   https://doi.org/10.1109/ACCESS.2020.2969987  
+   Shared-parking allocation with uncertain arrivals/departures and agent-based simulation.
+
+8. **Optimal allocation of shared parking slots considering parking unpunctuality under a platform-based management approach**  
+   Transportation Research Part E, 2020.  
+   https://doi.org/10.1016/j.tre.2020.102062
+
+9. **A reservation and allocation model for shared-parking addressing the uncertainty in drivers’ arrival/departure time**  
+   Transportation Research Part C, 2022.  
+   https://doi.org/10.1016/j.trc.2021.103484
+
+10. **A shared parking optimization framework based on dynamic resource allocation and path planning**  
+    Physica A, 2023.  
+    https://doi.org/10.1016/j.physa.2023.128649
+
+11. **Intelligent Delay Matching Method for Parking Allocation System via Multi-agent Deep Reinforcement Learning**  
+    2022.  
+    https://zgglxb.chd.edu.cn/EN/10.19721/j.cnki.1001-7372.2022.07.022
+
+12. **A many-to-many matching method considering priority for shared private idle parking spaces and demanders**  
+    Journal of Intelligent & Fuzzy Systems, 2024.  
+    https://doi.org/10.3233/JIFS-223789
+
+## How to use this list
+
+- Cite the original papers in the literature review and explain exactly what each contributes.
+- Use competitor websites/app listings to validate product overlap, not as evidence of research novelty.
+- Search patent databases, academic databases, app stores and local competitors before claiming novelty.
+- Distinguish commercial product novelty, technical contribution, academic novelty and patentability; they are different questions.
+
+
+
+==========================================================================================
+FILE: database/initial_schema.sql
+==========================================================================================
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+CREATE TABLE users (
+    id UUID PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    phone VARCHAR(20) UNIQUE,
+    password_hash TEXT,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE user_roles (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(40) NOT NULL,
+    PRIMARY KEY (user_id, role)
+);
+
+CREATE TABLE vehicles (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id),
+    vehicle_number VARCHAR(30),
+    vehicle_type VARCHAR(30) NOT NULL,
+    vehicle_length_cm NUMERIC(7,2),
+    vehicle_width_cm NUMERIC(7,2),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE providers (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id),
+    provider_type VARCHAR(30) NOT NULL,
+    business_name VARCHAR(200),
+    verification_status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE facilities (
+    id UUID PRIMARY KEY,
+    provider_id UUID NOT NULL REFERENCES providers(id),
+    name VARCHAR(200) NOT NULL,
+    address TEXT NOT NULL,
+    location GEOGRAPHY(POINT, 4326) NOT NULL,
+    facility_type VARCHAR(40),
+    verification_status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_facilities_location ON facilities USING GIST(location);
+
+CREATE TABLE parking_authorizations (
+    id UUID PRIMARY KEY,
+    provider_id UUID NOT NULL REFERENCES providers(id),
+    facility_id UUID NOT NULL REFERENCES facilities(id),
+    evidence_reference TEXT NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    reviewed_by UUID REFERENCES users(id),
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE parking_spaces (
+    id UUID PRIMARY KEY,
+    facility_id UUID NOT NULL REFERENCES facilities(id),
+    space_code VARCHAR(50),
+    vehicle_type VARCHAR(30) NOT NULL,
+    max_length_cm NUMERIC(7,2),
+    max_width_cm NUMERIC(7,2),
+    covered BOOLEAN NOT NULL DEFAULT FALSE,
+    ev_charging BOOLEAN NOT NULL DEFAULT FALSE,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    hourly_price NUMERIC(10,2) NOT NULL CHECK (hourly_price >= 0),
+    currency CHAR(3) NOT NULL DEFAULT 'INR',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(facility_id, space_code)
+);
+
+CREATE TABLE availability_schedules (
+    id UUID PRIMARY KEY,
+    parking_space_id UUID NOT NULL REFERENCES parking_spaces(id),
+    day_of_week SMALLINT NOT NULL CHECK(day_of_week BETWEEN 0 AND 6),
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    buffer_minutes INTEGER NOT NULL DEFAULT 15 CHECK(buffer_minutes >= 0),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    CHECK(start_time < end_time)
+);
+
+CREATE TABLE availability_exceptions (
+    id UUID PRIMARY KEY,
+    parking_space_id UUID NOT NULL REFERENCES parking_spaces(id),
+    starts_at TIMESTAMPTZ NOT NULL,
+    ends_at TIMESTAMPTZ NOT NULL,
+    exception_type VARCHAR(30) NOT NULL,
+    reason TEXT,
+    CHECK(ends_at > starts_at)
+);
+
+CREATE TABLE pool_groups (
+    id UUID PRIMARY KEY,
+    provider_id UUID REFERENCES providers(id),
+    name VARCHAR(150) NOT NULL,
+    description TEXT,
+    status VARCHAR(30) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE pool_memberships (
+    id UUID PRIMARY KEY,
+    pool_id UUID NOT NULL REFERENCES pool_groups(id),
+    parking_space_id UUID NOT NULL REFERENCES parking_spaces(id),
+    valid_from TIMESTAMPTZ NOT NULL,
+    valid_until TIMESTAMPTZ,
+    status VARCHAR(30) NOT NULL DEFAULT 'active',
+    CHECK(valid_until IS NULL OR valid_until > valid_from)
+);
+
+CREATE TABLE bookings (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id),
+    vehicle_id UUID NOT NULL REFERENCES vehicles(id),
+    parking_space_id UUID NOT NULL REFERENCES parking_spaces(id),
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
+    status VARCHAR(30) NOT NULL CHECK(status IN
+        ('held','confirmed','occupied','completed','cancelled','expired','no_show')),
+    total_amount NUMERIC(10,2) NOT NULL CHECK(total_amount >= 0),
+    currency CHAR(3) NOT NULL DEFAULT 'INR',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CHECK(end_time > start_time)
+);
+
+-- Prevent overlap among active inventory-consuming states.
+-- Include the configured buffer in the effective reserved interval
+-- in production; this starter constraint protects the requested interval.
+ALTER TABLE bookings
+ADD CONSTRAINT no_overlapping_active_bookings
+EXCLUDE USING GIST (
+    parking_space_id WITH =,
+    tstzrange(start_time, end_time, '[)') WITH &&
+)
+WHERE (status IN ('held','confirmed','occupied'));
+
+CREATE TABLE booking_holds (
+    id UUID PRIMARY KEY,
+    booking_id UUID NOT NULL REFERENCES bookings(id),
+    expires_at TIMESTAMPTZ NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE payments (
+    id UUID PRIMARY KEY,
+    booking_id UUID NOT NULL REFERENCES bookings(id),
+    provider VARCHAR(40) NOT NULL,
+    provider_transaction_id VARCHAR(200),
+    idempotency_key VARCHAR(200) UNIQUE,
+    amount NUMERIC(10,2) NOT NULL CHECK(amount >= 0),
+    status VARCHAR(30) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE reviews (
+    id UUID PRIMARY KEY,
+    booking_id UUID UNIQUE NOT NULL REFERENCES bookings(id),
+    user_id UUID NOT NULL REFERENCES users(id),
+    parking_space_id UUID NOT NULL REFERENCES parking_spaces(id),
+    rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+    comment TEXT,
+    moderation_status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE agent_runs (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    workflow_name VARCHAR(100) NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    input_summary TEXT,
+    output_summary TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE agent_events (
+    id UUID PRIMARY KEY,
+    run_id UUID NOT NULL REFERENCES agent_runs(id),
+    agent_name VARCHAR(100) NOT NULL,
+    event_type VARCHAR(100),
+    event_data JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY,
+    actor_user_id UUID REFERENCES users(id),
+    action VARCHAR(120) NOT NULL,
+    resource_type VARCHAR(80),
+    resource_id UUID,
+    metadata JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+
+
+==========================================================================================
+FILE: backend/app/main.py
+==========================================================================================
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(
+    title="ParkPool AI API",
+    description="Shared parking marketplace and coordination platform",
+    version="0.1.0",
+)
+
+# Restrict origins to the local frontend during development.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
+
+@app.get("/")
+def root():
+    return {
+        "application": "ParkPool AI",
+        "status": "running",
+        "version": app.version,
+        "note": "Development starter; not a production API.",
+    }
+
+
+@app.get("/health")
+def health():
+    return {"status": "healthy", "service": "parkpool-api"}
+
+
+
+==========================================================================================
+FILE: backend/app/__init__.py
+==========================================================================================
+
+
+
+==========================================================================================
+FILE: .env.example
+==========================================================================================
+APP_ENV=development
+DATABASE_URL=postgresql+psycopg://parkpool:CHANGE_ME@localhost:5432/parkpool
+REDIS_URL=redis://localhost:6379/0
+OPENAI_API_KEY=
+MAPS_API_KEY=
+PAYMENT_PROVIDER_KEY=
+PAYMENT_PROVIDER_SECRET=
+
+
+
+==========================================================================================
+FILE: .gitignore
+==========================================================================================
+.venv/
+__pycache__/
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+.pytest_cache/
+.coverage
+*.log
+
+
+
+==========================================================================================
+FILE: design/ASSET_NOTES.md
+==========================================================================================
+The included `parkpool_ai_product_showcase.png` is an original generated concept board that consolidates six illustrative UI areas. It is not a screenshot of a functioning application. Text, prices, review counts, ratings, utilization and analytics displayed in it are fictional mockup content. Do not use those values as product claims or evaluation results. Earlier web-referenced visuals in the planning conversation were illustrative references and were not source image files available for packaging.
+
+
+
+==========================================================================================
+FILE: design/VISUAL_ASSETS_GUIDE.md
+==========================================================================================
+# Visual Assets Guide
+
+## Included image
+- `parkpool_ai_product_showcase.png` — original generated ParkPool AI concept board from the source project pack. It is an illustrative multi-screen UI concept, not a screenshot of a functioning app.
+
+## Included diagrams
+- `diagrams/combined_system_architecture.mmd`
+- `diagrams/driver_booking_workflow.mmd`
+- `diagrams/agent_orchestration.mmd`
+
+These Mermaid source diagrams can be rendered in compatible Markdown editors or Mermaid Live Editor.
+
+## About images shown earlier in the chat
+The earlier conversation displayed illustrative web-referenced images through inline image previews. Those previews were not uploaded image files in the source package and their original image files were not available for extraction. This ZIP therefore includes the original consolidated product showcase image supplied in the ParkPool AI pack, plus editable architecture/workflow diagrams. It does not falsely claim to contain copies of the separate inline web previews.
+
+## Mockup disclaimer
+All interface visuals, sample values, ratings, prices and analytics are illustrative. Replace with actual product screenshots and measured data only after implementation.
+
+
+
+==========================================================================================
+FILE: design/diagrams/combined_system_architecture.mmd
+==========================================================================================
+flowchart TD
+  D[Driver Web / PWA] --> API[FastAPI Modular Monolith]
+  H[Host / Property Portal] --> API
+  A[Admin Console] --> API
+  API --> AUTH[Identity & Authorization]
+  API --> INV[Inventory & Provider Authority]
+  API --> GEO[PostGIS Discovery & Routing Adapter]
+  API --> AV[Availability & Scheduling]
+  API --> REC[Recommendation Service]
+  API --> OPT[Pooling Optimizer - OR-Tools]
+  API --> BOOK[Booking & Payment State Machine]
+  API --> OPS[Admin, Support & Audit]
+  REC --> AG[LangGraph Orchestrator]
+  AG --> TOOLS[Allowlisted Application Tools]
+  AG --> RAG[Policy RAG]
+  AG --> CREW[CrewAI Bounded Crews]
+  AV --> DB[(PostgreSQL + PostGIS)]
+  INV --> DB
+  BOOK --> DB
+  OPT --> DB
+  API --> REDIS[(Redis - cache/ephemeral holds)]
+  BOOK --> PAY[Payment Provider Adapter]
+  GEO --> MAP[Map / Pedestrian Routing Provider]
+  OPS --> OBS[Logs, Metrics, Traces]
+  DB --> OBS
+
+
+
+==========================================================================================
+FILE: design/diagrams/driver_booking_workflow.mmd
+==========================================================================================
+flowchart TD
+  S[Enter destination, date/time, vehicle] --> I[Parse request and preferences]
+  I --> C[Retrieve approved nearby spaces]
+  C --> V[Check schedules, exceptions, holds, bookings]
+  V --> F[Apply hard constraints: authority, access, vehicle, time]
+  F --> R[Calculate price, pedestrian route and evidence]
+  R --> O[Rank feasible options / optimize allocation]
+  O --> E[Explain recommendation with evidence]
+  E --> U{Driver selects and confirms?}
+  U -- No --> C
+  U -- Yes --> Q[Create server-side quote and transactional hold]
+  Q --> P[Payment verification if required]
+  P --> B[Confirm booking in backend]
+  B --> N[Show entrance instructions and booking code]
+  N --> CI[Host/property-controlled check-in]
+  CI --> PS[Parking session]
+  PS --> CO[Check-out / close session]
+  CO --> RC[Receipt, reconciliation, review or incident]
+
+
+
+==========================================================================================
+FILE: design/diagrams/agent_orchestration.mmd
+==========================================================================================
+flowchart TD
+  RQ[User Request] --> LG[LangGraph Supervisor]
+  LG --> INT[Intent Agent]
+  INT --> GEO[Location Agent]
+  GEO --> AV[Availability Service]
+  AV --> MAT[Matching Service]
+  MAT --> PRI[Pricing Service]
+  MAT --> REV[Review Intelligence]
+  PRI --> OPT[OR-Tools Optimizer]
+  REV --> OPT
+  OPT --> EXP[Evidence-backed Explanation]
+  EXP --> CONF{User confirmation}
+  CONF -->|Confirmed| BOOK[Transactional Booking Backend]
+  CONF -->|Not confirmed| END[Return options / refine]
+  BOOK --> NAV[Navigation and Notifications]
+  LG -. optional policy question .-> RAG[Policy RAG Support Agent]
+  LG -. bounded collaboration .-> CREW[CrewAI Review / Onboarding Crew]
+  BOOK --> DB[(Authoritative Database)]
+  AV --> DB
+
+
+
+==========================================================================================
+FILE: docs/architecture.mmd
+==========================================================================================
+flowchart TB
+  UI[React Web / PWA] --> API[FastAPI Modular Backend]
+  API --> AUTH[Identity & RBAC]
+  API --> DISC[Discovery / Inventory / Availability]
+  API --> BOOK[Booking & Payment Services]
+  API --> DB[(PostgreSQL + PostGIS)]
+  API --> CACHE[(Redis)]
+  API --> LG[LangGraph Orchestrator]
+  LG --> AG[Specialist Agents]
+  LG --> CREW[CrewAI Bounded Crews]
+  LG --> RAG[RAG Retrieval]
+  LG --> MCP[MCP Tool Gateway]
+  AG --> OPT[OR-Tools Allocation Engine]
+  OPT --> DB
+  MCP --> EXT[Maps / Notifications / Provider APIs]
+  BOOK --> PAY[Payment Provider]
+  BOOK --> DB
+
