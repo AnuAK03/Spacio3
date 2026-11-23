@@ -62,6 +62,41 @@ async function requireAuth(
   return user;
 }
 
+function checkBookingAccess(
+  bookingId: string,
+  user: UserSession
+): { found: boolean; authorized: boolean; booking?: (typeof store.bookings)[number] } {
+  const bk = store.bookings.find((b) => b.id === bookingId);
+  if (!bk) return { found: false, authorized: false };
+  if (user.role === 'admin') return { found: true, authorized: true, booking: bk };
+  if (user.role === 'host') {
+    return {
+      found: true,
+      authorized: store.isFacilityOwnedByHost(bk.facilityId, user),
+      booking: bk,
+    };
+  }
+  const authorized = Boolean(
+    bk.driverEmail && bk.driverEmail.toLowerCase() === user.email.toLowerCase()
+  );
+  return { found: true, authorized, booking: bk };
+}
+
+function checkHostBookingAccess(
+  bookingId: string,
+  user: UserSession
+): { found: boolean; authorized: boolean; booking?: (typeof store.bookings)[number] } {
+  const bk = store.bookings.find((b) => b.id === bookingId);
+  if (!bk) return { found: false, authorized: false };
+  if (user.role === 'admin') return { found: true, authorized: true, booking: bk };
+  if (user.role !== 'host') return { found: true, authorized: false, booking: bk };
+  return {
+    found: true,
+    authorized: store.isFacilityOwnedByHost(bk.facilityId, user),
+    booking: bk,
+  };
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -181,8 +216,10 @@ async function startServer() {
     res.json({ user });
   });
 
-  app.get('/api/workspace', (_req, res) => {
-    res.json(store.getSnapshot());
+  app.get('/api/workspace', async (req, res) => {
+    const user = await requireAuth(req, res);
+    if (!user) return;
+    res.json(store.getSnapshotForUser(user));
   });
 
   // =========================================================================
@@ -253,7 +290,9 @@ async function startServer() {
     res.json({ results: [...localMatches, ...nominatimResults].slice(0, 12) });
   });
 
-  app.post('/api/locations/select', (req, res) => {
+  app.post('/api/locations/select', async (req, res) => {
+    const user = await requireAuth(req, res);
+    if (!user) return;
     const loc = req.body?.location as BengaluruLocation | undefined;
     if (
       !loc ||
@@ -277,11 +316,13 @@ async function startServer() {
     res.json({
       location: cleanLoc,
       addedFacilities,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
-  app.get('/api/search', (req, res) => {
+  app.get('/api/search', async (req, res) => {
+    const user = await requireAuth(req, res);
+    if (!user) return;
     const vehicleId = String(req.query.vehicleId || 'VEH-SUV-01');
     const startMin = parseTimeToMinutes(String(req.query.start || '14:00'), 14 * 60);
     const endMin = parseTimeToMinutes(String(req.query.end || '17:30'), 17 * 60 + 30);
@@ -302,7 +343,9 @@ async function startServer() {
     });
   });
 
-  app.get('/api/pooling/compare', (_req, res) => {
+  app.get('/api/pooling/compare', async (req, res) => {
+    const user = await requireAuth(req, res);
+    if (!user) return;
     const strategies = store.computePoolingComparison();
     res.json({ strategies });
   });
@@ -480,9 +523,14 @@ async function startServer() {
       registeredVehicleId,
     } = req.body ?? {};
 
+    const effectiveEmail =
+      user.role === 'admin' && typeof email === 'string' && email.trim()
+        ? email.trim()
+        : user.email;
+
     const result = store.upsertDriverProfile({
       fullName: String(fullName || user.name),
-      email: String(email || user.email),
+      email: effectiveEmail,
       phone: String(phone || ''),
       licenseNumber: String(licenseNumber || ''),
       licenseValidTill: String(licenseValidTill || '2032-12-31'),
@@ -513,7 +561,7 @@ async function startServer() {
     res.status(201).json({
       profile: result.profile,
       vehicle: result.vehicle,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -548,7 +596,7 @@ async function startServer() {
     res.status(201).json({
       vehicle: result.vehicle,
       vehicles: result.vehicles,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -557,7 +605,7 @@ async function startServer() {
     if (!user) return;
     const rawVehicles = Array.isArray(req.body?.vehicles) ? req.body.vehicles : [];
     const vehicles = store.syncDriverVehicles(user.email, rawVehicles);
-    res.json({ vehicles, snapshot: store.getSnapshot() });
+    res.json({ vehicles, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.delete('/api/driver/vehicles/:vehicleId', async (req, res) => {
@@ -571,7 +619,7 @@ async function startServer() {
     res.json({
       nextActiveVehicleId: result.nextActiveVehicleId,
       vehicles: result.vehicles,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -580,8 +628,12 @@ async function startServer() {
     if (!user) return;
     const { spaceId, vehicleId, driverName, driverEmail, driverLicense, startMin, endMin } =
       req.body ?? {};
+    const effectiveEmail =
+      user.role === 'admin' && typeof driverEmail === 'string' && driverEmail.trim()
+        ? driverEmail.trim()
+        : user.email;
     const matchedProfile = store.driverProfiles.find(
-      (p) => p.email.toLowerCase() === (typeof driverEmail === 'string' ? driverEmail : user.email).toLowerCase()
+      (p) => p.email.toLowerCase() === effectiveEmail.toLowerCase()
     );
     const effectiveLicense = String(driverLicense || matchedProfile?.licenseNumber || '').trim();
     if (user.role === 'driver' && effectiveLicense.length < 6) {
@@ -594,7 +646,7 @@ async function startServer() {
       spaceId: String(spaceId),
       vehicleId: String(vehicleId),
       driverName: String(driverName || matchedProfile?.fullName || user.name),
-      driverEmail: typeof driverEmail === 'string' ? driverEmail : user.email,
+      driverEmail: effectiveEmail,
       driverLicense: effectiveLicense || undefined,
       startMin: Number(startMin),
       endMin: Number(endMin),
@@ -603,13 +655,22 @@ async function startServer() {
       res.status(409).json({ error: result.error });
       return;
     }
-    res.status(201).json({ booking: result.booking, snapshot: store.getSnapshot() });
+    res.status(201).json({ booking: result.booking, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/bookings/:id/action', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
     const { id } = req.params;
+    const access = checkBookingAccess(id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you do not have access to modify this booking.' });
+      return;
+    }
     const { action, arrivalMinutesLate } = req.body ?? {};
     const result = store.performBookingAction(id, action, {
       arrivalMinutesLate:
@@ -635,7 +696,7 @@ async function startServer() {
       extraMinutesCharged: result.extraMinutesCharged,
       remainingBalanceInr: result.remainingBalanceInr,
       unpaidDueInr: result.unpaidDueInr,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -643,6 +704,15 @@ async function startServer() {
     const user = await requireAuth(req, res);
     if (!user) return;
     const { id } = req.params;
+    const access = checkBookingAccess(id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you can only extend your own booking.' });
+      return;
+    }
     const addMinutes = Number(req.body?.additionalMinutes || 30);
     const result = store.requestBookingExtension(id, addMinutes);
     if (!result.ok) {
@@ -655,7 +725,7 @@ async function startServer() {
     res.status(201).json({
       extensionRequest: result.extensionRequest,
       booking: result.booking,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -663,42 +733,56 @@ async function startServer() {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
     const { id, reqId } = req.params;
+    const access = checkHostBookingAccess(id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you can only decide extensions for your own facilities.' });
+      return;
+    }
     const decision = req.body?.decision === 'reject' ? 'reject' : 'approve';
     const result = store.decideExtensionRequest(id, reqId, decision, user.name);
     if (!result.ok) {
       res.status(409).json({ error: result.error });
       return;
     }
-    res.json({ booking: result.booking, snapshot: store.getSnapshot() });
+    res.json({ booking: result.booking, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/bookings/:id/withdrawal-resolve', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
+    const access = checkBookingAccess(req.params.id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you do not have access to this booking.' });
+      return;
+    }
     const choice = req.body?.choice === 'rebook' ? 'rebook' : 'refund';
     const result = store.resolveAffectedWithdrawal(req.params.id, choice);
     if (!result.ok) {
       res.status(409).json({ error: result.error });
       return;
     }
-    res.json({ booking: result.booking, snapshot: store.getSnapshot() });
+    res.json({ booking: result.booking, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/bookings/:id/qr-checkin', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
     const { scannedToken, scanMethod, arrivalMinutesLate } = req.body ?? {};
-    const bk = store.bookings.find((b) => b.id === req.params.id);
-    if (!bk) {
+    const access = checkBookingAccess(req.params.id, user);
+    if (!access.found) {
       res.status(404).json({ error: 'Booking not found' });
       return;
     }
-    if (
-      user.role === 'driver' &&
-      bk.driverEmail &&
-      bk.driverEmail.toLowerCase() !== user.email.toLowerCase()
-    ) {
-      res.status(403).json({ error: 'Forbidden: you can only check in to your own booking.' });
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you do not have access to check in this booking.' });
       return;
     }
     const allowedMethods = ['camera', 'upload', 'gate_placard', 'manual_token'] as const;
@@ -715,12 +799,21 @@ async function startServer() {
       res.status(400).json({ error: result.error });
       return;
     }
-    res.json({ booking: result.booking, snapshot: store.getSnapshot() });
+    res.json({ booking: result.booking, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/bookings/:id/overstay', async (req, res) => {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
+    const access = checkHostBookingAccess(req.params.id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you can only report overstays for your own facilities.' });
+      return;
+    }
     const overstayMinutes = Number(req.body?.overstayMinutes || 45);
     const result = store.reportOverstay({
       bookingId: req.params.id,
@@ -735,20 +828,29 @@ async function startServer() {
       overstayBooking: result.overstayBooking,
       impactedBookings: result.impactedBookings,
       summary: result.summary,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
   app.post('/api/bookings/:id/overstay-resolve', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
+    const access = checkBookingAccess(req.params.id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you do not have access to this booking.' });
+      return;
+    }
     const choice = req.body?.choice === 'reschedule' ? 'reschedule' : 'refund_with_credit';
     const result = store.resolveOverstayImpact(req.params.id, choice);
     if (!result.ok) {
       res.status(409).json({ error: result.error });
       return;
     }
-    res.json({ booking: result.booking, snapshot: store.getSnapshot() });
+    res.json({ booking: result.booking, snapshot: store.getSnapshotForUser(user) });
   });
 
   // =========================================================================
@@ -771,12 +873,21 @@ async function startServer() {
       res.status(400).json({ error: result.error });
       return;
     }
-    res.json({ wallet: result.wallet, snapshot: store.getSnapshot() });
+    res.json({ wallet: result.wallet, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/bookings/:id/pay-wallet', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
+    const access = checkBookingAccess(req.params.id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you can only pay for your own booking.' });
+      return;
+    }
     const result = store.payHoldWithWallet(req.params.id, user.email, user.name);
     if (!result.ok) {
       res.status(409).json({ error: result.error, wallet: result.wallet });
@@ -787,7 +898,7 @@ async function startServer() {
       wallet: result.wallet,
       deductedInr: result.deductedInr ?? result.booking?.totalAmountInr ?? 0,
       remainingBalanceInr: result.remainingBalanceInr ?? result.wallet?.balanceInr ?? 0,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -795,20 +906,44 @@ async function startServer() {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
     const { scannedInput, expectedFacilityId, arrivalMinutesLate } = req.body ?? {};
+    const expectedFacId =
+      typeof expectedFacilityId === 'string' && expectedFacilityId.trim()
+        ? expectedFacilityId.trim()
+        : undefined;
+    if (expectedFacId && user.role === 'host') {
+      const facExists = store.facilities.some((f) => f.id === expectedFacId);
+      if (!facExists) {
+        res.status(404).json({ error: 'Facility not found' });
+        return;
+      }
+      if (!store.isFacilityOwnedByHost(expectedFacId, user)) {
+        res.status(403).json({ error: 'Forbidden: you do not own this facility.' });
+        return;
+      }
+    }
+    const allowedFacilityIds =
+      user.role === 'host'
+        ? store.facilities
+            .filter((f) => store.isFacilityOwnedByHost(f.id, user))
+            .map((f) => f.id)
+        : undefined;
+
     const result = store.verifyDriverQrAtHostScanner({
       scannedInput: String(scannedInput || ''),
-      expectedFacilityId: typeof expectedFacilityId === 'string' && expectedFacilityId ? expectedFacilityId : undefined,
+      expectedFacilityId: expectedFacId,
+      allowedFacilityIds,
       actorName: user.name,
       arrivalMinutesLate: typeof arrivalMinutesLate === 'number' ? arrivalMinutesLate : undefined,
     });
     if (!result.ok) {
-      res.status(400).json({ error: result.error });
+      const code = result.error?.startsWith('Forbidden:') ? 403 : 400;
+      res.status(code).json({ error: result.error });
       return;
     }
     res.json({
       booking: result.booking,
       lifecycleEvent: result.lifecycleEvent,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -820,17 +955,13 @@ async function startServer() {
       res.status(400).json({ error: 'bookingId is required.' });
       return;
     }
-    const bk = store.bookings.find((b) => b.id === String(bookingId));
-    if (!bk) {
+    const access = checkBookingAccess(String(bookingId), user);
+    if (!access.found) {
       res.status(404).json({ error: 'Booking not found' });
       return;
     }
-    if (
-      user.role === 'driver' &&
-      bk.driverEmail &&
-      bk.driverEmail.toLowerCase() !== user.email.toLowerCase()
-    ) {
-      res.status(403).json({ error: 'Forbidden: you can only evaluate your own active booking.' });
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you do not have access to evaluate this booking.' });
       return;
     }
     const result = await evaluateAutonomousOverstayLifecycle({
@@ -852,13 +983,22 @@ async function startServer() {
       impactedBookings: result.impactedBookings,
       wallet: result.wallet,
       lifecycleEvent: result.lifecycleEvent,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
   app.post('/api/bookings/:id/extension-offers/:offerId/respond', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
+    const access = checkBookingAccess(req.params.id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you do not have access to this booking.' });
+      return;
+    }
     const decision = req.body?.decision === 'decline' ? 'decline' : 'accept';
     const result = store.respondToExtensionOffer({
       bookingId: req.params.id,
@@ -875,13 +1015,22 @@ async function startServer() {
       booking: result.booking,
       offer: result.offer,
       wallet: result.wallet,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
   app.post('/api/bookings/:id/departure-signal', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
+    const access = checkBookingAccess(req.params.id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you do not have access to this booking.' });
+      return;
+    }
     const signalType =
       req.body?.signalType === 'geofence_exit' ? 'geofence_exit' : 'im_leaving_button';
     const distanceFromGateM =
@@ -899,13 +1048,22 @@ async function startServer() {
     res.json({
       booking: result.booking,
       lifecycleEvent: result.lifecycleEvent,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
   app.post('/api/bookings/:id/confirm-departure', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
+    const access = checkBookingAccess(req.params.id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you do not have access to confirm departure for this booking.' });
+      return;
+    }
     const confirmedBy = user.role === 'host' || user.role === 'admin' ? 'host' : 'driver';
     const result = store.confirmDepartureAndStartClearance({
       bookingId: req.params.id,
@@ -924,13 +1082,37 @@ async function startServer() {
       remainingBalanceInr: result.remainingBalanceInr ?? result.wallet?.balanceInr ?? 0,
       unpaidDueInr: result.unpaidDueInr ?? result.wallet?.unpaidDueInr ?? 0,
       lifecycleEvent: result.lifecycleEvent,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
   app.post('/api/spaces/:spaceId/complete-clearance', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
+    const sp = store.spaces.find((s) => s.id === req.params.spaceId);
+    if (!sp) {
+      res.status(404).json({ error: 'Space not found' });
+      return;
+    }
+    if (user.role === 'host' && !store.isSpaceOwnedByHost(sp.id, user)) {
+      res.status(403).json({ error: 'Forbidden: you do not own this parking space.' });
+      return;
+    }
+    if (user.role === 'driver') {
+      const activeBk = sp.activeOccupancyBookingId
+        ? store.bookings.find((b) => b.id === sp.activeOccupancyBookingId)
+        : undefined;
+      const latestCompletedForSpace = store.bookings.find(
+        (b) => b.spaceId === sp.id && b.driverEmail?.toLowerCase() === user.email.toLowerCase()
+      );
+      if (
+        !(activeBk && activeBk.driverEmail?.toLowerCase() === user.email.toLowerCase()) &&
+        !latestCompletedForSpace
+      ) {
+        res.status(403).json({ error: 'Forbidden: you do not have access to this space.' });
+        return;
+      }
+    }
     const result = store.completeClearanceBufferAndReopen(req.params.spaceId, user.name);
     if (!result.ok) {
       res.status(409).json({ error: result.error });
@@ -939,7 +1121,7 @@ async function startServer() {
     res.json({
       space: result.space,
       lifecycleEvent: result.lifecycleEvent,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -947,6 +1129,15 @@ async function startServer() {
     const user = await requireAuth(req, res);
     if (!user) return;
     const { id } = req.params;
+    const access = checkBookingAccess(id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you can only review your own booking.' });
+      return;
+    }
     const { rating, comment, authorName } = req.body ?? {};
     const result = store.addBookingReview(
       id,
@@ -958,7 +1149,7 @@ async function startServer() {
       res.status(400).json({ error: result.error });
       return;
     }
-    res.json({ snapshot: store.getSnapshot() });
+    res.json({ snapshot: store.getSnapshotForUser(user) });
   });
 
   // =========================================================================
@@ -969,6 +1160,15 @@ async function startServer() {
     const user = await requireAuth(req, res);
     if (!user) return;
     const bookingId = String(req.body?.bookingId || '');
+    const access = checkBookingAccess(bookingId, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you do not have access to create a payment order for this booking.' });
+      return;
+    }
     const result = store.createPaymentOrder(bookingId);
     if (!result.ok) {
       res.status(409).json({ error: result.error });
@@ -977,7 +1177,7 @@ async function startServer() {
     res.status(201).json({
       order: result.order,
       booking: result.booking,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -1003,14 +1203,23 @@ async function startServer() {
       ok: true,
       duplicate: Boolean(result.duplicate),
       webhookEvent: result.webhookEvent,
-      booking: result.booking,
-      snapshot: store.getSnapshot(),
+      bookingId: result.booking?.id,
     });
   });
 
   app.post('/api/payments/orders/:orderId/gateway-dispatch', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
+    const order = store.paymentOrders.find((o) => o.id === req.params.orderId);
+    if (!order) {
+      res.status(404).json({ error: 'Payment order not found' });
+      return;
+    }
+    const access = checkBookingAccess(order.bookingId, user);
+    if (access.found && !access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you do not have access to dispatch payment for this order.' });
+      return;
+    }
     const outcome =
       req.body?.outcome === 'payment.failed' ? 'payment.failed' : 'payment.succeeded';
     const customEventId =
@@ -1025,7 +1234,7 @@ async function startServer() {
       duplicate: Boolean(result.duplicate),
       webhookEvent: result.webhookEvent,
       booking: result.booking,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -1059,10 +1268,15 @@ async function startServer() {
       ? (providerType as DetailedProviderType)
       : 'property_owner';
 
+    const effectiveEmail =
+      user.role === 'admin' && typeof contactEmail === 'string' && contactEmail.trim()
+        ? contactEmail.trim()
+        : user.email;
+
     const result = store.registerProvider({
       name: String(name || user.name),
       contactName: String(contactName || user.name),
-      contactEmail: String(contactEmail || user.email),
+      contactEmail: effectiveEmail,
       contactPhone: String(contactPhone || ''),
       organizationName: String(organizationName || ''),
       registrationNumber:
@@ -1081,12 +1295,21 @@ async function startServer() {
       res.status(code).json({ error: result.error });
       return;
     }
-    res.status(201).json({ provider: result.provider, snapshot: store.getSnapshot() });
+    res.status(201).json({ provider: result.provider, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/providers/:providerId/evidence', async (req, res) => {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
+    const providerExists = store.providers.some((p) => p.id === req.params.providerId);
+    if (!providerExists) {
+      res.status(404).json({ error: 'Provider not found' });
+      return;
+    }
+    if (user.role === 'host' && !store.isProviderOwnedByHost(req.params.providerId, user)) {
+      res.status(403).json({ error: 'Forbidden: you can only submit evidence for your own provider account.' });
+      return;
+    }
     const { docType, fileName, mimeType, contentText, verificationStatus, status } = req.body ?? {};
     const result = store.submitProviderEvidence({
       providerId: req.params.providerId,
@@ -1109,7 +1332,7 @@ async function startServer() {
     res.status(201).json({
       provider: result.provider,
       document: result.document,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
@@ -1139,8 +1362,27 @@ async function startServer() {
       res.status(400).json({ error: 'Name, address, and hourly price are required.' });
       return;
     }
+    const requestedProviderId =
+      typeof providerId === 'string' && providerId.trim() ? providerId.trim() : undefined;
+    if (requestedProviderId && user.role === 'host') {
+      const prvExists = store.providers.some((p) => p.id === requestedProviderId);
+      if (!prvExists) {
+        res.status(404).json({ error: 'Provider not found' });
+        return;
+      }
+      if (!store.isProviderOwnedByHost(requestedProviderId, user)) {
+        res.status(403).json({ error: 'Forbidden: you cannot create facilities under another provider.' });
+        return;
+      }
+    }
+    const resolvedProviderId =
+      user.role === 'host'
+        ? requestedProviderId || store.ensureProviderForHost(user).id
+        : requestedProviderId;
+
     const created = store.addFacilityWithSpace({
-      providerId: typeof providerId === 'string' ? providerId : undefined,
+      providerId: resolvedProviderId,
+      ownerUser: user,
       name: String(name),
       providerName: String(providerName || user.name),
       providerType:
@@ -1165,12 +1407,21 @@ async function startServer() {
       accessInstructions:
         typeof accessInstructions === 'string' ? accessInstructions : undefined,
     });
-    res.status(201).json({ ...created, snapshot: store.getSnapshot() });
+    res.status(201).json({ ...created, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/spaces/:spaceId/pricing', async (req, res) => {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
+    const spaceExists = store.spaces.some((s) => s.id === req.params.spaceId);
+    if (!spaceExists) {
+      res.status(404).json({ error: 'Space not found' });
+      return;
+    }
+    if (user.role === 'host' && !store.isSpaceOwnedByHost(req.params.spaceId, user)) {
+      res.status(403).json({ error: 'Forbidden: you do not own this parking space.' });
+      return;
+    }
     const { hourlyPriceInr, hardDepartureMin, restrictions } = req.body ?? {};
     const result = store.updateSpacePricingAndRestrictions({
       spaceId: req.params.spaceId,
@@ -1183,18 +1434,28 @@ async function startServer() {
       res.status(404).json({ error: result.error });
       return;
     }
-    res.json({ space: result.space, snapshot: store.getSnapshot() });
+    res.json({ space: result.space, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/spaces/:spaceId/owner-blocks', async (req, res) => {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
-    const { startMin, endMin, label } = req.body ?? {};
+    const spaceExists = store.spaces.some((s) => s.id === req.params.spaceId);
+    if (!spaceExists) {
+      res.status(404).json({ error: 'Space not found' });
+      return;
+    }
+    if (user.role === 'host' && !store.isSpaceOwnedByHost(req.params.spaceId, user)) {
+      res.status(403).json({ error: 'Forbidden: you do not own this parking space.' });
+      return;
+    }
+    const { startMin, endMin, label, date } = req.body ?? {};
     const result = store.addOwnerUseBlock({
       spaceId: req.params.spaceId,
       startMin: Number(startMin),
       endMin: Number(endMin),
       label: String(label || 'Owner Use Block'),
+      date: typeof date === 'string' && date.trim() ? date.trim() : undefined,
       actorName: user.name,
     });
     if (!result.ok) {
@@ -1203,19 +1464,29 @@ async function startServer() {
     }
     res.status(201).json({
       protectedBookings: result.protectedBookings,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
   app.post('/api/spaces/:spaceId/withdraw', async (req, res) => {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
-    const { startMin, endMin, reason } = req.body ?? {};
+    const spaceExists = store.spaces.some((s) => s.id === req.params.spaceId);
+    if (!spaceExists) {
+      res.status(404).json({ error: 'Space not found' });
+      return;
+    }
+    if (user.role === 'host' && !store.isSpaceOwnedByHost(req.params.spaceId, user)) {
+      res.status(403).json({ error: 'Forbidden: you do not own this parking space.' });
+      return;
+    }
+    const { startMin, endMin, reason, date } = req.body ?? {};
     const result = store.withdrawFutureAvailability({
       spaceId: req.params.spaceId,
       startMin: Number(startMin),
       endMin: Number(endMin),
       reason: String(reason || 'Host Schedule Withdrawal'),
+      date: typeof date === 'string' && date.trim() ? date.trim() : undefined,
       actorName: user.name,
     });
     if (!result.ok) {
@@ -1225,54 +1496,90 @@ async function startServer() {
     res.status(201).json({
       withdrawal: result.withdrawal,
       affectedBookings: result.affectedBookings,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(user),
     });
   });
 
   app.put('/api/facilities/:id', async (req, res) => {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
+    const facExists = store.facilities.some((f) => f.id === req.params.id);
+    if (!facExists) {
+      res.status(404).json({ error: 'Facility not found' });
+      return;
+    }
+    if (user.role === 'host' && !store.isFacilityOwnedByHost(req.params.id, user)) {
+      res.status(403).json({ error: 'Forbidden: you do not own this facility.' });
+      return;
+    }
     const result = store.updateFacility(req.params.id, req.body ?? {}, user.name);
     if (!result.ok) {
       res.status(404).json({ error: result.error });
       return;
     }
-    res.json({ facility: result.facility, snapshot: store.getSnapshot() });
+    res.json({ facility: result.facility, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.delete('/api/facilities/:id', async (req, res) => {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
+    const facExists = store.facilities.some((f) => f.id === req.params.id);
+    if (!facExists) {
+      res.status(404).json({ error: 'Facility not found' });
+      return;
+    }
+    if (user.role === 'host' && !store.isFacilityOwnedByHost(req.params.id, user)) {
+      res.status(403).json({ error: 'Forbidden: you do not own this facility.' });
+      return;
+    }
     const result = store.deleteFacility(req.params.id, user.name);
     if (!result.ok) {
       res.status(404).json({ error: result.error });
       return;
     }
-    res.json({ ok: true, snapshot: store.getSnapshot() });
+    res.json({ ok: true, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/facilities/:id/assign', async (req, res) => {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
+    const facExists = store.facilities.some((f) => f.id === req.params.id);
+    if (!facExists) {
+      res.status(404).json({ error: 'Facility not found' });
+      return;
+    }
+    if (user.role === 'host' && !store.isFacilityOwnedByHost(req.params.id, user)) {
+      res.status(403).json({ error: 'Forbidden: you do not own this facility.' });
+      return;
+    }
     const { driverEmail } = req.body ?? {};
     const result = store.assignFacilityDriver(req.params.id, driverEmail, user.name);
     if (!result.ok) {
       res.status(404).json({ error: result.error });
       return;
     }
-    res.json({ facility: result.facility, snapshot: store.getSnapshot() });
+    res.json({ facility: result.facility, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/bookings/:id/cancel-host', async (req, res) => {
     const user = await requireAuth(req, res, ['host', 'admin']);
     if (!user) return;
+    const access = checkHostBookingAccess(req.params.id, user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you can only cancel bookings at your own facilities.' });
+      return;
+    }
     const { reason } = req.body ?? {};
     const result = store.cancelBookingHost(req.params.id, String(reason || 'Host cancellation'), user.name);
     if (!result.ok) {
       res.status(400).json({ error: result.error });
       return;
     }
-    res.json({ booking: result.booking, snapshot: store.getSnapshot() });
+    res.json({ booking: result.booking, snapshot: store.getSnapshotForUser(user) });
   });
 
   // =========================================================================
@@ -1298,7 +1605,7 @@ async function startServer() {
       res.status(400).json({ error: result.error });
       return;
     }
-    res.json({ provider: result.provider, snapshot: store.getSnapshot() });
+    res.json({ provider: result.provider, snapshot: store.getSnapshotForUser(admin) });
   });
 
   app.post('/admin/spaces/:space_id/approve', async (req, res) => {
@@ -1317,7 +1624,7 @@ async function startServer() {
       space: result.space,
       facility: result.facility,
       checks: result.checks,
-      snapshot: store.getSnapshot(),
+      snapshot: store.getSnapshotForUser(admin),
     });
   });
 
@@ -1336,14 +1643,14 @@ async function startServer() {
       res.status(404).json({ error: result.error });
       return;
     }
-    res.json({ facility: result.facility, snapshot: store.getSnapshot() });
+    res.json({ facility: result.facility, snapshot: store.getSnapshotForUser(admin) });
   });
 
   app.post('/api/admin/periodic-review', async (req, res) => {
     const admin = await requireAuth(req, res, ['admin']);
     if (!admin) return;
     const summary = store.runPeriodicReviewSweep(admin.id);
-    res.json({ ...summary, snapshot: store.getSnapshot() });
+    res.json({ ...summary, snapshot: store.getSnapshotForUser(admin) });
   });
 
   app.post('/api/admin/documents/:docId/access-link', async (req, res) => {
@@ -1416,7 +1723,7 @@ async function startServer() {
       res.status(404).json({ error: 'Facility not found' });
       return;
     }
-    res.json({ facility: updated, snapshot: store.getSnapshot() });
+    res.json({ facility: updated, snapshot: store.getSnapshotForUser(admin) });
   });
 
   app.post('/api/admin/settlements/:id/settle', async (req, res) => {
@@ -1427,7 +1734,7 @@ async function startServer() {
       res.status(409).json({ error: result.error });
       return;
     }
-    res.json({ settlement: result.settlement, snapshot: store.getSnapshot() });
+    res.json({ settlement: result.settlement, snapshot: store.getSnapshotForUser(admin) });
   });
 
   // =========================================================================
@@ -1451,7 +1758,7 @@ async function startServer() {
       severity: severity || 'medium',
       description: String(description),
     });
-    res.status(201).json({ incident: inc, snapshot: store.getSnapshot() });
+    res.status(201).json({ incident: inc, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/admin/incidents/:id', async (req, res) => {
@@ -1468,7 +1775,7 @@ async function startServer() {
       res.status(404).json({ error: 'Incident not found' });
       return;
     }
-    res.json({ incident: inc, snapshot: store.getSnapshot() });
+    res.json({ incident: inc, snapshot: store.getSnapshotForUser(admin) });
   });
 
   app.post('/api/disputes', async (req, res) => {
@@ -1477,6 +1784,15 @@ async function startServer() {
     const { bookingId, reason, requestedRefundInr } = req.body ?? {};
     if (!bookingId || !reason) {
       res.status(400).json({ error: 'Booking ID and dispute reason are required.' });
+      return;
+    }
+    const access = checkBookingAccess(String(bookingId), user);
+    if (!access.found) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+    if (!access.authorized) {
+      res.status(403).json({ error: 'Forbidden: you can only raise disputes for your own booking.' });
       return;
     }
     const result = store.raiseDispute({
@@ -1489,7 +1805,7 @@ async function startServer() {
       res.status(400).json({ error: result.error });
       return;
     }
-    res.status(201).json({ dispute: result.dispute, snapshot: store.getSnapshot() });
+    res.status(201).json({ dispute: result.dispute, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/admin/disputes/:id/resolve', async (req, res) => {
@@ -1506,7 +1822,7 @@ async function startServer() {
       res.status(404).json({ error: result.error });
       return;
     }
-    res.json({ dispute: result.dispute, snapshot: store.getSnapshot() });
+    res.json({ dispute: result.dispute, snapshot: store.getSnapshotForUser(admin) });
   });
 
   app.post('/api/reports', async (req, res) => {
@@ -1522,7 +1838,7 @@ async function startServer() {
       reporterName: user.name,
       reason: String(reason),
     });
-    res.status(201).json({ report, snapshot: store.getSnapshot() });
+    res.status(201).json({ report, snapshot: store.getSnapshotForUser(user) });
   });
 
   app.post('/api/admin/reports/:id', async (req, res) => {
@@ -1539,15 +1855,27 @@ async function startServer() {
       res.status(404).json({ error: 'Report not found' });
       return;
     }
-    res.json({ report: rep, snapshot: store.getSnapshot() });
+    res.json({ report: rep, snapshot: store.getSnapshotForUser(admin) });
   });
 
   app.post('/api/notifications/:id/read', async (req, res) => {
     const user = await requireAuth(req, res);
     if (!user) return;
     const ntf = store.notifications.find((n) => n.id === req.params.id);
-    if (ntf) ntf.read = true;
-    res.json({ snapshot: store.getSnapshot() });
+    if (!ntf) {
+      res.status(404).json({ error: 'Notification not found' });
+      return;
+    }
+    if (
+      user.role !== 'admin' &&
+      ntf.driverEmail &&
+      ntf.driverEmail.toLowerCase() !== user.email.toLowerCase()
+    ) {
+      res.status(403).json({ error: 'Forbidden: you cannot update another user’s notification.' });
+      return;
+    }
+    ntf.read = true;
+    res.json({ snapshot: store.getSnapshotForUser(user) });
   });
 
   if (process.env.NODE_ENV !== 'production') {

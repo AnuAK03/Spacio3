@@ -1072,9 +1072,25 @@ export async function askDriverGenAiAgent(
     );
 
   if (isSearchIntent) {
-    const approvedSpaces = store.spaces.filter(
-      (s) => s.publicationStatus === 'approved' && s.occupancyState === 'AVAILABLE'
-    );
+    store.expireStaleHolds();
+    store.syncOccupancyStates();
+    const approvedSpaces = store.spaces.filter((s) => {
+      if (s.publicationStatus !== 'approved' || s.occupancyState !== 'AVAILABLE') {
+        return false;
+      }
+      if (s.clearanceEndsAt && Date.now() < Date.parse(s.clearanceEndsAt)) {
+        return false;
+      }
+      const hasActiveBooking = store.bookings.some(
+        (b) =>
+          b.spaceId === s.id &&
+          (b.status === 'held' ||
+            b.status === 'confirmed' ||
+            b.status === 'checked-in' ||
+            b.status === 'occupied')
+      );
+      return !hasActiveBooking;
+    });
     const evPreferred = activeVehicle.isEv || /ev|charg/i.test(lowerQ);
     const coveredPreferred = /cover|basement|shade/i.test(lowerQ);
 
@@ -1275,15 +1291,15 @@ Checking in to your ParkPool parking spot is fast, verified, and completely touc
 - **Access Instructions**: ${activeFacility.accessInstructions}
 - **Walk Path Safety**: ${activeFacility.walkPathSafety} · ${activeFacility.accessControl}
 
-Tap **Parking Spot Directions** on your active booking card in **Active Bookings** to view live turn-by-turn map guidance and real-time vehicle route tracking directly to your spot.`;
+Tap **Parking Spot Directions** on your active booking card in **Active Bookings** to view turn-by-turn map guidance directly to your spot.`;
     } else {
       answer = `### 📍 Parking Spot Directions & Navigation
 
-ParkPool AI provides exact, walkway-measured directions directly to parking spot entrances rather than ambiguous center-point coordinates:
+ParkPool provides exact, walkway-measured directions directly to parking spot entrances rather than ambiguous center-point coordinates:
 
 - Select your destination area on the **Find Parking** map.
-- Once you reserve a spot, tap **Get Directions on Map** or open **Active Bookings &rarr; Parking Spot Directions**.
-- You will see live turn-by-turn directions with travel modes (**Drive**, **2-Wheeler**, **Transit**, **Walk**), traffic overlays, and real-time tracking to your spot entrance.`;
+- Once you reserve a spot, tap **Get Directions on Map** or open **Active Bookings → Parking Spot Directions**.
+- You will see turn-by-turn directions with travel modes (**Drive**, **2-Wheeler**, **Transit**, **Walk**) to your spot entrance.`;
     }
   } else if (/price|fee|cost|breakdown|gst|wallet|balance|topup|top\s+up/i.test(lowerQ)) {
     citations.push({
@@ -1371,21 +1387,7 @@ Select any of the cards below to reserve your spot instantly via your prepaid wa
       title: 'Spot Check-In, Access PIN & Backup Spot Wall Placard Protocol',
       section: 'Section 11.4.H',
     });
-    answer = `### 👋 Hello! I am your ParkPool AI Driver Assistant
-
-I am here to ensure your parking experience in Bengaluru is seamless, verified, and secure. Here is what I can do for you:
-
-- **Find & Recommend Spots**: Looking for covered EV spots or closest parking under 300m for your **${
-      activeVehicle.label
-    }**? Just ask.
-- **Spot Directions & Live Tracking**: Access exact walkway turn-by-turn guidance to your reserved parking spot entrance.
-- **Seamless Check-In**: Learn how to use your live QR pass, Spot Access PIN, or the backup **Scan Spot Wall QR** self check-in placard.
-- **Prepaid Wallet & Pricing**: View your remaining balance (**₹${
-      wallet?.balanceInr ?? 500
-    }**) and understand transparent fee breakdowns (Base + 10% fee + 18% GST).
-- **Policies & Overstay**: Clear answers on late arrival grace (20 min grace), 30-min extensions, and 100% refund rules.
-
-How can I help you right now?`;
+    answer = `Hi! I can help you find spots for your **${activeVehicle.label}**, check directions, explain QR/PIN check-in, or review your **₹${wallet?.balanceInr ?? 500}** wallet balance. What would you like to check?`;
   }
 
   return {

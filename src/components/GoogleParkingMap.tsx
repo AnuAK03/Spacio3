@@ -12,22 +12,22 @@ import {
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  Bike,
+  Bicycle,
   Car,
-  ChevronDown,
-  ChevronUp,
+  CaretDown,
+  CaretUp,
   Compass,
   Crosshair,
-  Footprints,
-  Layers,
+  MagnifyingGlass,
   MapPin,
-  Navigation,
-  Route as RouteIcon,
-  Search,
+  MapTrifold,
+  NavigationArrow,
   ShieldCheck,
-  TrainFront,
+  SneakerMove,
+  SquaresFour,
+  TrainSimple,
   X,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { BengaluruLocation, CandidateEvaluation, Facility } from '../types/parkpool';
 import {
   isGoogleMapsQuotaError,
@@ -78,9 +78,9 @@ const TRAVEL_MODES: Array<{
   color: string;
 }> = [
   { id: 'DRIVING', label: 'Drive', icon: Car, color: '#1A73E8' },
-  { id: 'TWO_WHEELER', label: '2-Wheeler', icon: Bike, color: '#D93F0B' },
-  { id: 'TRANSIT', label: 'Transit', icon: TrainFront, color: '#0F9D58' },
-  { id: 'WALKING', label: 'Walk', icon: Footprints, color: '#4338CA' },
+  { id: 'TWO_WHEELER', label: '2 Wheeler', icon: Bicycle, color: '#C83709' },
+  { id: 'TRANSIT', label: 'Transit', icon: TrainSimple, color: '#047857' },
+  { id: 'WALKING', label: 'Walk', icon: SneakerMove, color: '#4338CA' },
 ];
 
 const LAYER_OPTIONS: Array<{ id: MapLayerMode; label: string }> = [
@@ -327,13 +327,13 @@ const FacilityAdvancedMarker: React.FC<FacilityAdvancedMarkerProps> = ({
       onClick={() => onSelect(facility.id, marker)}
     >
       <div
-        className={`flex items-center gap-1 rounded-full border-2 border-white px-2 py-1 text-[11px] font-bold text-white shadow-md transition-transform ${
+        className={`flex items-center gap-1 rounded-full border-2 border-white px-2 py-1 caption-3 text-white shadow-md transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isSelected ? 'scale-110 ring-2 ring-[#C83709]/40' : 'hover:scale-105'
         }`}
         style={{ backgroundColor: bg }}
       >
         <span
-          className="flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-extrabold"
+          className="flex h-4 w-4 items-center justify-center rounded-full bg-white caption-3"
           style={{ color: bg }}
         >
           P
@@ -659,8 +659,8 @@ const GooglePlacesSearchBox: React.FC<GooglePlacesSearchBoxProps> = ({
 
   return (
     <div ref={boxRef} className="relative w-full max-w-xs">
-      <div className="flex items-center gap-2 rounded-xl border border-black/[0.12] bg-white/95 px-3 py-1.5 shadow-md backdrop-blur-md">
-        <Search className="h-3.5 w-3.5 shrink-0 text-[#1A73E8]" />
+      <div className="flex items-center gap-2 rounded-xl border border-black/[0.12] bg-white/95 px-3 py-2 shadow-md backdrop-blur-md">
+        <MagnifyingGlass className="h-4 w-4 shrink-0 text-[#1A73E8]" />
         <input
           type="text"
           value={query}
@@ -669,8 +669,8 @@ const GooglePlacesSearchBox: React.FC<GooglePlacesSearchBoxProps> = ({
             setQuery(e.target.value);
             setOpen(true);
           }}
-          placeholder="Search Google Maps..."
-          className="w-full bg-transparent text-xs font-medium text-[#111827] placeholder-[#6B7280] focus:outline-none"
+          placeholder="Search location..."
+          className="w-full bg-transparent caption-4 text-[#111827] placeholder-[#6B7280] focus:outline-none"
         />
         {query && (
           <button
@@ -688,15 +688,15 @@ const GooglePlacesSearchBox: React.FC<GooglePlacesSearchBoxProps> = ({
       </div>
 
       {open && (googleSuggestions.length > 0 || localMatches.length > 0) && (
-        <div className="absolute left-0 right-0 z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border border-black/[0.1] bg-white p-1.5 shadow-xl">
+        <div className="absolute left-0 right-0 z-30 mt-1 max-h-56 overflow-y-auto rounded-xl border border-black/[0.1] bg-white p-2 shadow-xl">
           {googleSuggestions.map((s, idx) => (
             <button
               key={`g-${idx}`}
               type="button"
               onClick={() => void handleSelectPrediction(s)}
-              className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left text-xs hover:bg-blue-50"
+              className="flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left caption-4 hover:bg-blue-50"
             >
-              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#1A73E8]" />
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#1A73E8]" weight="fill" />
               <span className="truncate font-medium text-[#111827]">
                 {s.placePrediction?.text.text}
               </span>
@@ -716,12 +716,12 @@ const GooglePlacesSearchBox: React.FC<GooglePlacesSearchBoxProps> = ({
                 setQuery(loc.name);
                 setOpen(false);
               }}
-              className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left text-xs hover:bg-[#FFF0EA]"
+              className="flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left caption-4 hover:bg-[#FFF0EA]"
             >
-              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#C83709]" />
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#C83709]" weight="fill" />
               <div className="min-w-0">
-                <div className="truncate font-semibold text-[#111827]">{loc.name}</div>
-                <div className="truncate text-[10px] text-[#4B5563]">{loc.area}</div>
+                <div className="truncate caption-3 text-[#111827]">{loc.name}</div>
+                <div className="truncate caption-5 text-[#4B5563]">{loc.area}</div>
               </div>
             </button>
           ))}
@@ -1226,7 +1226,17 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
     };
   }, [liveTracking, directionsActive, routeSummary, simProgress, gpsEnabled, gpsCoords]);
 
-  if (!activeFac) return null;
+  if (!activeFac) {
+    return (
+      <div className="flex h-full min-h-[360px] flex-col items-center justify-center rounded-2xl border border-black/[0.08] bg-[#FAF9F6] p-6 text-center">
+        <MapPin className="h-8 w-8 text-[#C83709]" weight="bold" />
+        <div className="title-3 mt-3 text-[#111827]">All nearby spaces are currently allotted</div>
+        <p className="caption-4 mt-1 max-w-sm text-[#4B5563]">
+          Booked spots stay hidden from the map until checkout and turnaround buffer complete.
+        </p>
+      </div>
+    );
+  }
 
   const activeEval =
     evaluations.find((e) => e.facilityId === activeFac.id && e.eligible) ||
@@ -1296,27 +1306,25 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
           {/* Origin Marker */}
           <AdvancedMarker position={originPoint} zIndex={500} title={originLabel}>
             <div className="flex items-center gap-1.5">
-              <div className="h-4 w-4 rounded-full border-[3px] border-white bg-[#1A73E8] shadow-md" />
-              <span className="rounded-full border border-[#1A73E8] bg-[#111827] px-2 py-0.5 text-[10px] font-bold text-white shadow">
+              <div className="flex h-4 w-4 rounded-full border-2 border-white bg-[#1A73E8] shadow-md" />
+              <span className="rounded-lg border border-[#1A73E8] bg-[#111827] px-2 py-0.5 caption-3 text-white shadow">
                 {originLabel.length > 22 ? `${originLabel.slice(0, 20)}…` : originLabel}
               </span>
             </div>
           </AdvancedMarker>
 
-          {/* Live Vehicle Tracker Marker */}
           {liveTrackerPoint && (
             <AdvancedMarker
               position={liveTrackerPoint}
               zIndex={1200}
               title="Live tracking vehicle"
             >
-              <div className="flex h-6 w-6 items-center justify-center rounded-full border-[3px] border-white bg-[#1A73E8] shadow-[0_0_0_6px_rgba(26,115,232,0.28)]">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-[#1A73E8] shadow-[0_0_0_6px_rgba(26,115,232,0.28)]">
                 <div className="h-2 w-2 rounded-full bg-white" />
               </div>
             </AdvancedMarker>
           )}
 
-          {/* Parking Facility Markers */}
           {sortedFacilities.map((fac, idx) => {
             const facEvals = evaluations.filter((e) => e.facilityId === fac.id);
             const bestEval = facEvals.find((e) => e.eligible) || facEvals[0];
@@ -1354,10 +1362,10 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
                 setInfoAnchor(null);
               }}
             >
-              <div className="min-w-[180px] space-y-1 p-0.5 text-xs">
-                <div className="font-bold text-[#111827]">{infoFac.name}</div>
-                <div className="text-[11px] text-[#4B5563]">{infoFac.address}</div>
-                <div className="font-semibold text-[#C83709]">
+              <div className="min-w-[180px] space-y-1 p-1 caption-4">
+                <div className="title-5 text-[#111827]">{infoFac.name}</div>
+                <div className="caption-5 text-[#4B5563]">{infoFac.address}</div>
+                <div className="caption-3 text-[#C83709]">
                   Spot Entrance: {infoFac.entranceLabel}
                 </div>
                 <button
@@ -1367,9 +1375,9 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
                     setDirectionsMode(true);
                     setInfoFacilityId(null);
                   }}
-                  className="mt-1 inline-flex items-center gap-1 rounded-lg bg-[#1A73E8] px-2.5 py-1 text-[11px] font-bold text-white"
+                  className="mt-1 inline-flex items-center gap-1 rounded-lg bg-[#1A73E8] px-3 py-1 button-xsm text-white"
                 >
-                  <Navigation className="h-3 w-3" />
+                  <NavigationArrow className="h-3.5 w-3.5" />
                   <span>Directions</span>
                 </button>
               </div>
@@ -1412,35 +1420,34 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-black/[0.08] bg-white/95 shadow-sm backdrop-blur-md">
-      {/* Google Maps-Style Top Control Strip: Destination + Travel Modes + Directions Toggle */}
-      <div className="flex flex-col gap-2 border-b border-black/[0.06] bg-white px-3.5 py-2.5">
+    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-black/[0.08] bg-white">
+      <div className="flex flex-col gap-2 bg-white px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#E8F0FE] text-[#1A73E8]">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E8F0FE] text-[#1A73E8]">
               {liveTracking ? (
                 <Compass className="h-4 w-4 animate-pulse" />
               ) : (
-                <Navigation className="h-4 w-4" />
+                <NavigationArrow className="h-4 w-4" />
               )}
             </div>
             <div className="min-w-0">
-              <div className="truncate font-display text-xs font-bold text-[#111827] sm:text-sm">
+              <div className="truncate title-4 text-[#111827]">
                 {activeFac.name}
                 {bookedSpotCode ? ` · Spot ${bookedSpotCode}` : ''}
               </div>
-              <div className="truncate text-[11px] text-[#4B5563]">
+              <div className="truncate caption-5 text-[#4B5563]">
                 {activeFac.address} · {activeFac.entranceLabel}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handleToggleMyLocation}
               title="Use Live GPS Location"
-              className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors ${
+              className={`flex items-center gap-1 rounded-lg border px-3 py-2 button-xsm transition-colors duration-300 ${
                 gpsEnabled
                   ? 'border-[#1A73E8] bg-[#E8F0FE] text-[#1A73E8]'
                   : 'border-black/[0.1] bg-[#F8F7F4] text-[#374151] hover:border-[#1A73E8]'
@@ -1448,26 +1455,25 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
             >
               <Crosshair className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">
-                {gpsEnabled ? 'GPS Live' : 'My Location'}
+                {gpsEnabled ? 'GPS live' : 'My location'}
               </span>
             </button>
 
             <button
               type="button"
               onClick={() => setDirectionsMode(!directionsActive)}
-              className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-bold transition-colors ${
+              className={`flex items-center gap-1 rounded-lg px-3 py-2 button-xsm transition-colors duration-300 ${
                 directionsActive
-                  ? 'bg-[#1A73E8] text-white shadow-sm'
+                  ? 'bg-[#1A73E8] text-white'
                   : 'border border-black/[0.1] bg-white text-[#1A73E8] hover:bg-[#E8F0FE]'
               }`}
             >
-              <RouteIcon className="h-3.5 w-3.5" />
-              <span>{directionsActive ? 'Directions On' : 'Directions'}</span>
+              <MapTrifold className="h-3.5 w-3.5" />
+              <span>{directionsActive ? 'Directions on' : 'Directions'}</span>
             </button>
           </div>
         </div>
 
-        {/* Travel Modes + Map Layers Strip */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="Travel mode">
             {TRAVEL_MODES.map((m) => {
@@ -1483,45 +1489,45 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
                     setTravelMode(m.id);
                     if (!directionsActive) setDirectionsMode(true);
                   }}
-                  className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all ${
+                  className={`flex items-center gap-1 rounded-lg px-3 py-1 button-xsm transition-colors duration-300 ${
                     active
                       ? 'bg-[#E8F0FE] text-[#1A73E8] ring-1 ring-[#1A73E8]/40'
                       : 'bg-[#F3F2EE] text-[#4B5563] hover:text-[#111827]'
                   }`}
                 >
-                  <Icon className="h-3 w-3" />
+                  <Icon className="h-3.5 w-3.5" />
                   <span>{m.label}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="relative flex items-center gap-1.5">
+          <div className="relative flex items-center gap-2">
             <button
               type="button"
               onClick={() => setShowTraffic((t) => !t)}
-              className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors ${
+              className={`rounded-lg px-3 py-1 button-xsm transition-colors duration-300 ${
                 showTraffic
                   ? 'bg-emerald-50 text-[#047857] ring-1 ring-emerald-300'
                   : 'bg-[#F3F2EE] text-[#4B5563]'
               }`}
             >
-              Traffic {showTraffic ? 'On' : 'Off'}
+              Traffic {showTraffic ? 'on' : 'off'}
             </button>
 
             <button
               type="button"
               onClick={() => setLayersMenuOpen((o) => !o)}
-              className="flex items-center gap-1 rounded-full border border-black/[0.1] bg-white px-2.5 py-1 text-[11px] font-bold text-[#374151] hover:border-[#1A73E8]"
+              className="flex items-center gap-1 rounded-lg border border-black/[0.1] bg-white px-3 py-1 button-xsm text-[#374151] hover:border-[#1A73E8]"
             >
-              <Layers className="h-3 w-3 text-[#1A73E8]" />
+              <SquaresFour className="h-3.5 w-3.5 text-[#1A73E8]" />
               <span className="capitalize">
                 {layerMode === 'roadmap' ? 'Map' : layerMode}
               </span>
             </button>
 
             {layersMenuOpen && (
-              <div className="absolute right-0 top-8 z-30 w-36 rounded-xl border border-black/[0.1] bg-white p-1.5 shadow-xl">
+              <div className="absolute right-0 top-8 z-30 w-36 rounded-xl border border-black/[0.1] bg-white p-1 shadow-xl">
                 {LAYER_OPTIONS.map((opt) => (
                   <button
                     key={opt.id}
@@ -1530,7 +1536,7 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
                       setLayerMode(opt.id);
                       setLayersMenuOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold ${
+                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left caption-3 ${
                       layerMode === opt.id
                         ? 'bg-[#E8F0FE] text-[#1A73E8]'
                         : 'text-[#374151] hover:bg-[#F3F2EE]'
@@ -1546,51 +1552,48 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
         </div>
 
         {gpsNote && (
-          <div className="rounded-lg bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-900">
+          <div className="rounded-lg bg-amber-50 px-3 py-1 caption-4 text-amber-900">
             {gpsNote}
           </div>
         )}
       </div>
 
-      {/* Interactive Map Viewport */}
       <div className="relative flex-1 bg-[#ECEAE4]">
         {mapSurface}
 
-        {/* Floating Bottom-Left Recenter + Live Tracking Pill */}
-        <div className="pointer-events-auto absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-1.5">
+        <div className="pointer-events-auto absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setCenterSeq((s) => s + 1)}
-            className="flex items-center gap-1 rounded-full border border-black/[0.12] bg-white/95 px-2.5 py-1 text-[11px] font-bold text-[#111827] shadow-md hover:bg-white"
+            className="flex items-center gap-1 rounded-lg border border-black/[0.12] bg-white/95 px-3 py-1 button-xsm text-[#111827] shadow-md hover:bg-white"
           >
-            <Crosshair className="h-3 w-3 text-[#1A73E8]" />
+            <Crosshair className="h-3.5 w-3.5 text-[#1A73E8]" />
             <span>Recenter</span>
           </button>
 
           {liveTracking && directionsActive && (
-            <span className="flex items-center gap-1.5 rounded-full bg-[#1A73E8] px-2.5 py-1 text-[11px] font-bold text-white shadow-md">
+            <span className="flex items-center gap-2 rounded-lg bg-[#1A73E8] px-3 py-1 caption-3 text-white shadow-md">
               <span className="h-2 w-2 animate-ping rounded-full bg-white" />
-              <span>Live Tracking</span>
+              <span>Live tracking</span>
             </span>
           )}
         </div>
       </div>
 
-      {/* Directions Route Summary + Expandable Turn-by-Turn Steps */}
       {directionsActive && routeSummary && (
-        <div className="border-t border-black/[0.08] bg-[#F8FAFC]">
-          <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="font-mono text-sm font-extrabold text-[#1A73E8]">
+        <div className="bg-[#F8FAFC]">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2 caption-4">
+              <span className="font-mono body-4 text-[#1A73E8]">
                 {routeSummary.durationText}
               </span>
               <span className="text-black/25">·</span>
-              <span className="font-mono font-semibold text-[#111827]">
+              <span className="font-mono caption-3 text-[#111827]">
                 {routeSummary.distanceText}
               </span>
               <span className="text-black/25">·</span>
-              <span className="text-[11px] font-medium text-[#4B5563]">
-                {originLabel} &rarr; {activeFac.entranceLabel}
+              <span className="caption-4 text-[#4B5563]">
+                {originLabel} → {activeFac.entranceLabel}
               </span>
             </div>
 
@@ -1599,39 +1602,39 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
                 href={externalDirectionsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-lg border border-black/[0.1] bg-white px-2.5 py-1 text-[11px] font-bold text-[#1A73E8] hover:bg-[#E8F0FE]"
+                className="rounded-lg border border-black/[0.1] bg-white px-3 py-1 button-xsm text-[#1A73E8] hover:bg-[#E8F0FE]"
               >
-                {useRealGoogleMaps ? 'Open in Google Maps' : 'Open Route in Map'}
+                {useRealGoogleMaps ? 'Open in Google Maps' : 'Open route in map'}
               </a>
               <button
                 type="button"
                 onClick={() => setStepsExpanded((s) => !s)}
-                className="flex items-center gap-1 rounded-lg bg-[#111827] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-black"
+                className="flex items-center gap-1 rounded-lg bg-[#111827] px-3 py-1 button-xsm text-white hover:bg-black"
               >
-                <span>{stepsExpanded ? 'Hide Steps' : `Steps (${routeSummary.steps.length})`}</span>
+                <span>{stepsExpanded ? 'Hide steps' : `Steps (${routeSummary.steps.length})`}</span>
                 {stepsExpanded ? (
-                  <ChevronDown className="h-3 w-3" />
+                  <CaretDown className="h-3.5 w-3.5" />
                 ) : (
-                  <ChevronUp className="h-3 w-3" />
+                  <CaretUp className="h-3.5 w-3.5" />
                 )}
               </button>
             </div>
           </div>
 
           {stepsExpanded && (
-            <div className="max-h-40 space-y-1.5 overflow-y-auto border-t border-black/[0.06] bg-white px-3.5 py-2.5 text-xs">
+            <div className="max-h-40 space-y-2 overflow-y-auto bg-white px-4 py-3 caption-4">
               {routeSummary.steps.map((st, idx) => (
                 <div
                   key={idx}
-                  className="flex items-start justify-between gap-3 rounded-lg bg-[#F8F7F4] px-2.5 py-1.5"
+                  className="flex items-start justify-between gap-3 rounded-lg bg-[#F8F7F4] px-3 py-2"
                 >
                   <div className="flex items-start gap-2 min-w-0">
-                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#E8F0FE] font-mono text-[10px] font-bold text-[#1A73E8]">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#E8F0FE] font-mono caption-3 text-[#1A73E8]">
                       {idx + 1}
                     </span>
                     <span className="text-[#111827]">{st.instruction}</span>
                   </div>
-                  <span className="shrink-0 font-mono text-[11px] text-[#4B5563]">
+                  <span className="shrink-0 font-mono caption-4 text-[#4B5563]">
                     {st.distanceText} · {st.durationText}
                   </span>
                 </div>
@@ -1641,16 +1644,15 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
         </div>
       )}
 
-      {/* Bottom Gate Safety Footer */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-black/[0.06] bg-[#F8F7F4]/90 px-3.5 py-2 text-xs text-[#374151]">
-        <span className="flex items-center gap-1.5">
-          <ShieldCheck className="h-4 w-4 shrink-0 text-[#047857]" />
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-[#F8F7F4] px-4 py-2 caption-4 text-[#374151]">
+        <span className="flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 shrink-0 text-[#047857]" weight="fill" />
           <span>
             <strong className="text-[#111827]">Entrance:</strong> {activeFac.entranceLabel}
-            {activeEval ? ` · ${activeEval.walkingDistanceM}m (${activeEval.walkingMinutes} min walk to destination)` : ''}
+            {activeEval ? ` · ${activeEval.walkingDistanceM}m (${activeEval.walkingMinutes} min walk to hub)` : ''}
           </span>
         </span>
-        <span className="text-[11px] text-[#4B5563]">{activeFac.walkPathSafety}</span>
+        <span className="caption-5 text-[#4B5563]">{activeFac.walkPathSafety}</span>
       </div>
     </div>
   );

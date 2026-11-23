@@ -2147,8 +2147,20 @@ class ParkPoolStore {
   }
 
   public syncOccupancyStates() {
+    const nowMs = Date.now();
     for (const space of this.spaces) {
-      if (space.occupancyState) continue;
+      if (space.occupancyState === 'CLEARANCE') {
+        const endsAtMs = space.clearanceEndsAt ? Date.parse(space.clearanceEndsAt) : 0;
+        if (space.vacancyConfirmed && (!space.clearanceEndsAt || nowMs >= endsAtMs)) {
+          this.completeClearanceBufferAndReopen(space.id, 'Autonomous Buffer Timer Agent');
+        }
+        continue;
+      }
+
+      if (space.occupancyState === 'OVERSTAY' || space.occupancyState === 'DEPARTURE_PENDING') {
+        continue;
+      }
+
       const occupiedBk = this.bookings.find(
         (b) =>
           b.spaceId === space.id &&
@@ -2163,6 +2175,7 @@ class ParkPoolStore {
         space.lastOccupancyEvent = `Vehicle active in bay (${occupiedBk.id})`;
         continue;
       }
+
       const upcomingBk = this.bookings.find(
         (b) =>
           b.spaceId === space.id &&
@@ -2171,14 +2184,17 @@ class ParkPoolStore {
       if (upcomingBk) {
         space.occupancyState = 'BOOKED';
         space.activeOccupancyBookingId = upcomingBk.id;
-        space.vacancyConfirmed = true;
-        space.bufferCompleted = true;
+        space.vacancyConfirmed = false;
+        space.bufferCompleted = false;
         space.lastOccupancyEvent = `Reserved by ${upcomingBk.id}`;
         continue;
       }
+
       space.occupancyState = 'AVAILABLE';
+      space.activeOccupancyBookingId = undefined;
       space.vacancyConfirmed = true;
       space.bufferCompleted = true;
+      space.clearanceEndsAt = undefined;
       space.lastOccupancyEvent = 'Confirmed vacant and open for booking';
     }
   }
@@ -2252,6 +2268,7 @@ class ParkPoolStore {
       }
     }
     if (expiredCount > 0) {
+      this.syncOccupancyStates();
       this.addAudit('Hold Expiry Sweeper', 'HOLDS_EXPIRED', `Released ${expiredCount} abandoned/unpaid checkout hold(s).`);
     }
     return expiredCount;
@@ -2308,6 +2325,68 @@ class ParkPoolStore {
     };
   }
 
+  public getProvidersForHost(email: string): ProviderRecord[] {
+    const clean = email.trim().toLowerCase();
+    return this.providers.filter((p) => p.contactEmail.toLowerCase() === clean);
+  }
+
+  public ensureProviderForHost(user: UserSession): ProviderRecord {
+    const existing = this.getProvidersForHost(user.email)[0];
+    if (existing) return existing;
+
+    const cleanEmail = user.email.trim().toLowerCase();
+    const nowIso = new Date().toISOString();
+    const id = `PRV-${Date.now().toString(36).toUpperCase().slice(-5)}`;
+    const provider: ProviderRecord = {
+      id,
+      name: user.name,
+      contactName: user.name,
+      contactEmail: cleanEmail,
+      contactPhone: '+91 98450 00000',
+      organizationName: user.organization?.trim() || `${user.name} Parking`,
+      providerType: 'property_owner',
+      legacyType: 'individual',
+      verificationStatus: 'NOT_SUBMITTED',
+      evidenceRefs: [],
+      documents: [],
+      aiPrecheckWarnings: [],
+      complaintsCount: 0,
+      operatorChangeFlagged: false,
+      updatedAt: nowIso,
+    };
+    this.providers.unshift(provider);
+    this.addAudit(
+      user.name,
+      'PROVIDER_AUTO_INITIALIZED',
+      `${id} initialized for host ${cleanEmail} (status=NOT_SUBMITTED).`
+    );
+    return provider;
+  }
+
+  public isProviderOwnedByHost(providerId: string, user: UserSession): boolean {
+    if (user.role === 'admin') return true;
+    if (user.role !== 'host') return false;
+    const prv = this.providers.find((p) => p.id === providerId);
+    if (!prv) return false;
+    return prv.contactEmail.toLowerCase() === user.email.trim().toLowerCase();
+  }
+
+  public isFacilityOwnedByHost(facilityId: string, user: UserSession): boolean {
+    if (user.role === 'admin') return true;
+    if (user.role !== 'host') return false;
+    const fac = this.facilities.find((f) => f.id === facilityId);
+    if (!fac) return false;
+    return this.isProviderOwnedByHost(fac.providerId, user);
+  }
+
+  public isSpaceOwnedByHost(spaceId: string, user: UserSession): boolean {
+    if (user.role === 'admin') return true;
+    if (user.role !== 'host') return false;
+    const sp = this.spaces.find((s) => s.id === spaceId);
+    if (!sp) return false;
+    return this.isFacilityOwnedByHost(sp.facilityId, user);
+  }
+
   public getSnapshot(): WorkspaceSnapshot {
     this.expireStaleHolds();
     this.ensureQrTokens();
@@ -2337,6 +2416,267 @@ class ParkPoolStore {
       lifecycleEvents: this.lifecycleEvents,
       analytics: this.computeAdminAnalytics(),
       auditLogs: this.auditLogs,
+    };
+  }
+
+  public getSnapshotForUser(user: UserSession): WorkspaceSnapshot {
+    if (user.role === 'admin') {
+      return this.getSnapshot();
+    }
+
+    this.expireStaleHolds();
+    this.ensureQrTokens();
+    this.syncOccupancyStates();
+
+    const cleanEmail = user.email.trim().toLowerCase();
+    const cleanName = user.name.trim().toLowerCase();
+
+    if (user.role === 'host') {
+      const ownProviders = this.providers.filter(
+        (p) => p.contactEmail.toLowerCase() === cleanEmail
+      );
+      const ownProviderIds = new Set(ownProviders.map((p) => p.id));
+      const ownFacilities = this.facilities.filter((f) =>
+        ownProviderIds.has(f.providerId)
+      );
+      const ownFacilityIds = new Set(ownFacilities.map((f) => f.id));
+      const ownSpaces = this.spaces.filter((s) => ownFacilityIds.has(s.facilityId));
+      const ownSpaceIds = new Set(ownSpaces.map((s) => s.id));
+      const ownBookings = this.bookings.filter((b) =>
+        ownFacilityIds.has(b.facilityId)
+      );
+      const ownBookingIds = new Set(ownBookings.map((b) => b.id));
+      const ownSettlements = this.settlements.filter((s) =>
+        ownProviderIds.has(s.providerId)
+      );
+      const ownRefunds = this.refunds.filter((r) => ownBookingIds.has(r.bookingId));
+      const ownDisputes = this.disputes.filter((d) => ownBookingIds.has(d.bookingId));
+      const ownTransactions = this.transactions.filter((t) =>
+        ownBookingIds.has(t.bookingId)
+      );
+      const ownLifecycleEvents = this.lifecycleEvents.filter(
+        (ev) => ownBookingIds.has(ev.bookingId) || ownSpaceIds.has(ev.spaceId)
+      );
+      const ownIncidents = this.incidents.filter(
+        (inc) =>
+          (inc.facilityId && ownFacilityIds.has(inc.facilityId)) ||
+          (inc.bookingId && ownBookingIds.has(inc.bookingId)) ||
+          inc.reporterName.toLowerCase() === cleanName
+      );
+      const ownAuditLogs = this.auditLogs.filter(
+        (log) =>
+          log.actor.toLowerCase().includes(cleanName) ||
+          log.actor.toLowerCase().includes(cleanEmail)
+      );
+
+      const hostAnalytics: AdminAnalytics = {
+        totalGmvInr: ownSettlements.reduce((sum, s) => sum + s.grossInr, 0),
+        platformRevenueInr: ownSettlements.reduce(
+          (sum, s) => sum + s.platformCommissionInr,
+          0
+        ),
+        totalRefundedInr: ownRefunds
+          .filter((r) => r.status === 'processed' || r.status === 'approved')
+          .reduce((sum, r) => sum + r.amountInr, 0),
+        totalSettledHostInr: ownSettlements
+          .filter((s) => s.status === 'settled')
+          .reduce((sum, s) => sum + s.netPayoutInr, 0),
+        approvedProviders: ownProviders.filter(
+          (p) => p.verificationStatus === 'APPROVED'
+        ).length,
+        pendingProviders: ownProviders.filter((p) =>
+          [
+            'NOT_SUBMITTED',
+            'SUBMITTED',
+            'UNDER_REVIEW',
+            'NEEDS_MORE_INFORMATION',
+          ].includes(p.verificationStatus)
+        ).length,
+        approvedSpaces: ownSpaces.filter(
+          (s) => s.publicationStatus === 'approved'
+        ).length,
+        pendingSpaces: ownSpaces.filter(
+          (s) => s.publicationStatus !== 'approved'
+        ).length,
+        activeBookings: ownBookings.filter((b) =>
+          ['held', 'confirmed', 'checked-in', 'occupied'].includes(b.status)
+        ).length,
+        duplicateWebhooksBlocked: 0,
+        openIncidents: ownIncidents.filter((i) => i.status !== 'resolved').length,
+        openDisputes: ownDisputes.filter(
+          (d) => d.status === 'open' || d.status === 'under_review'
+        ).length,
+        expiringProviders: ownProviders.filter(
+          (p) =>
+            p.verificationStatus === 'EXPIRED' ||
+            (p.expiresAt &&
+              Date.parse(p.expiresAt) < Date.now() + 30 * 86400 * 1000)
+        ).length,
+      };
+
+      return {
+        pilotZone: this.pilotZone,
+        destinationName: this.destinationName,
+        destinationCoords: this.destinationCoords,
+        locations: BENGALURU_LOCATIONS,
+        vehicles: [],
+        driverProfiles: [],
+        providers: ownProviders,
+        evidenceChecklists: EVIDENCE_CHECKLISTS,
+        facilities: ownFacilities,
+        spaces: ownSpaces,
+        bookings: ownBookings,
+        paymentOrders: [],
+        webhookEvents: [],
+        refunds: ownRefunds,
+        settlements: ownSettlements,
+        transactions: ownTransactions,
+        incidents: ownIncidents,
+        disputes: ownDisputes,
+        userReports: [],
+        notifications: [],
+        wallets: [],
+        lifecycleEvents: ownLifecycleEvents,
+        analytics: hostAnalytics,
+        auditLogs: ownAuditLogs,
+      };
+    }
+
+    // Driver role: public verified facilities/spaces + strictly own bookings/financials/profile
+    const ownBookings = this.bookings.filter(
+      (b) => b.driverEmail?.toLowerCase() === cleanEmail
+    );
+    const ownBookingIds = new Set(ownBookings.map((b) => b.id));
+    const ownFacilityIdsFromBookings = new Set(
+      ownBookings.map((b) => b.facilityId)
+    );
+    const ownSpaceIdsFromBookings = new Set(ownBookings.map((b) => b.spaceId));
+
+    const visibleFacilities = this.facilities
+      .filter(
+        (f) =>
+          f.verificationStatus === 'verified' ||
+          ownFacilityIdsFromBookings.has(f.id)
+      )
+      .map((f) => ({
+        ...f,
+        assignedDriverEmail:
+          f.assignedDriverEmail &&
+          f.assignedDriverEmail.toLowerCase() === cleanEmail
+            ? f.assignedDriverEmail
+            : undefined,
+      }));
+    const visibleFacilityIds = new Set(visibleFacilities.map((f) => f.id));
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const visibleSpaces = this.spaces
+      .filter(
+        (s) =>
+          visibleFacilityIds.has(s.facilityId) &&
+          (s.publicationStatus === 'approved' ||
+            ownSpaceIdsFromBookings.has(s.id))
+      )
+      .map((s) => {
+        const otherActiveBookings = this.bookings.filter(
+          (b) =>
+            b.spaceId === s.id &&
+            b.driverEmail?.toLowerCase() !== cleanEmail &&
+            (b.status === 'held' ||
+              b.status === 'confirmed' ||
+              b.status === 'checked-in' ||
+              b.status === 'occupied')
+        );
+        const projectedBlocks = otherActiveBookings.map((b) => ({
+          id: `OCC-${b.id}`,
+          startMin: b.startMin,
+          endMin: b.endMin,
+          label: 'Booked Slot',
+          date: todayIso,
+          type: 'booking' as const,
+        }));
+        return {
+          ...s,
+          ownerBlocks: [...s.ownerBlocks, ...projectedBlocks],
+        };
+      });
+
+    const ownVehicles = this.vehicles.filter(
+      (v) => !v.ownerEmail || v.ownerEmail.toLowerCase() === cleanEmail
+    );
+    const ownProfiles = this.driverProfiles.filter(
+      (p) => p.email.toLowerCase() === cleanEmail
+    );
+    const ownWallets = this.wallets.filter(
+      (w) => w.driverEmail.toLowerCase() === cleanEmail
+    );
+    const ownPaymentOrders = this.paymentOrders.filter((o) =>
+      ownBookingIds.has(o.bookingId)
+    );
+    const ownRefunds = this.refunds.filter((r) => ownBookingIds.has(r.bookingId));
+    const ownDisputes = this.disputes.filter((d) => ownBookingIds.has(d.bookingId));
+    const ownTransactions = this.transactions.filter((t) =>
+      ownBookingIds.has(t.bookingId)
+    );
+    const ownNotifications = this.notifications.filter(
+      (n) =>
+        (n.driverEmail && n.driverEmail.toLowerCase() === cleanEmail) ||
+        (n.bookingId && ownBookingIds.has(n.bookingId))
+    );
+    const ownLifecycleEvents = this.lifecycleEvents.filter((ev) =>
+      ownBookingIds.has(ev.bookingId)
+    );
+    const ownIncidents = this.incidents.filter(
+      (inc) =>
+        (inc.bookingId && ownBookingIds.has(inc.bookingId)) ||
+        inc.reporterName.toLowerCase() === cleanName
+    );
+    const ownReports = this.userReports.filter(
+      (r) => r.reporterName.toLowerCase() === cleanName
+    );
+
+    return {
+      pilotZone: this.pilotZone,
+      destinationName: this.destinationName,
+      destinationCoords: this.destinationCoords,
+      locations: BENGALURU_LOCATIONS,
+      vehicles: ownVehicles,
+      driverProfiles: ownProfiles,
+      providers: [],
+      evidenceChecklists: EVIDENCE_CHECKLISTS,
+      facilities: visibleFacilities,
+      spaces: visibleSpaces,
+      bookings: ownBookings,
+      paymentOrders: ownPaymentOrders,
+      webhookEvents: [],
+      refunds: ownRefunds,
+      settlements: [],
+      transactions: ownTransactions,
+      incidents: ownIncidents,
+      disputes: ownDisputes,
+      userReports: ownReports,
+      notifications: ownNotifications,
+      wallets: ownWallets,
+      lifecycleEvents: ownLifecycleEvents,
+      analytics: {
+        totalGmvInr: 0,
+        platformRevenueInr: 0,
+        totalRefundedInr: 0,
+        totalSettledHostInr: 0,
+        approvedProviders: 0,
+        pendingProviders: 0,
+        approvedSpaces: visibleSpaces.length,
+        pendingSpaces: 0,
+        activeBookings: ownBookings.filter((b) =>
+          ['held', 'confirmed', 'checked-in', 'occupied'].includes(b.status)
+        ).length,
+        duplicateWebhooksBlocked: 0,
+        openIncidents: ownIncidents.filter((i) => i.status !== 'resolved').length,
+        openDisputes: ownDisputes.filter(
+          (d) => d.status === 'open' || d.status === 'under_review'
+        ).length,
+        expiringProviders: 0,
+      },
+      auditLogs: [],
     };
   }
 
@@ -3132,16 +3472,20 @@ class ParkPoolStore {
 
     const conflicts: string[] = [];
     for (const bk of activeBookings) {
-      const bufferedStart = bk.startMin - space.bufferMinutes;
-      const bufferedEnd = bk.endMin + space.bufferMinutes;
-      if (reqStartMin < bufferedEnd && reqEndMin > bufferedStart) {
-        conflicts.push(
-          `Booking ${bk.id} (${formatMinutesToTime(bk.startMin)}–${formatMinutesToTime(bk.endMin)} + ${space.bufferMinutes}m buffer)`
-        );
-      }
+      conflicts.push(
+        `Slot allotted to booking ${bk.id} (${formatMinutesToTime(bk.startMin)}–${formatMinutesToTime(bk.endMin)} + ${space.bufferMinutes}m buffer until checkout)`
+      );
     }
 
+    const todayIso = new Date().toISOString().slice(0, 10);
     for (const ob of space.ownerBlocks) {
+      if (ob.date && ob.date !== todayIso) continue;
+      if (ob.type === 'booking') {
+        conflicts.push(
+          `Slot allotted (${formatMinutesToTime(ob.startMin)}–${formatMinutesToTime(ob.endMin)} + ${space.bufferMinutes}m buffer)`
+        );
+        continue;
+      }
       const bufferedStart = ob.startMin - space.bufferMinutes;
       const bufferedEnd = ob.endMin;
       if (reqStartMin < bufferedEnd && reqEndMin > bufferedStart) {
@@ -3152,6 +3496,7 @@ class ParkPoolStore {
     }
 
     for (const wd of space.withdrawals) {
+      if (wd.date && wd.date !== todayIso) continue;
       if (reqStartMin < wd.endMin && reqEndMin > wd.startMin) {
         conflicts.push(
           `Host withdrew slot (${formatMinutesToTime(wd.startMin)}–${formatMinutesToTime(wd.endMin)}: ${wd.reason})`
@@ -3164,7 +3509,7 @@ class ParkPoolStore {
       constraint: 'time_window_buffer_integrity',
       passed: noOverlap,
       detail: noOverlap
-        ? `Zero overlap across ${activeBookings.length} active bookings, ${space.ownerBlocks.length} owner blocks & ${space.withdrawals.length} withdrawals`
+        ? `Zero active allotments across bookings, ${space.ownerBlocks.length} owner blocks & ${space.withdrawals.length} withdrawals`
         : `Conflict detected: ${conflicts.join('; ')}`,
       evidenceRef: `availability:${space.id}:windows`,
     });
@@ -3172,29 +3517,36 @@ class ParkPoolStore {
       rejectionReasons.push(conflicts[0]);
     }
 
-    // Critical Autonomous Rule: Never assume a space is free on timer alone; block OVERSTAY / DEPARTURE_PENDING / CLEARANCE
+    // Critical Autonomous Rule: Keep space closed while booked/occupied/overstay/departure/clearance buffer is active
     const occState = space.occupancyState || 'AVAILABLE';
-    const occupancyClear =
-      occState !== 'OVERSTAY' && occState !== 'DEPARTURE_PENDING' && occState !== 'CLEARANCE';
+    const clearanceRemainingMs =
+      occState === 'CLEARANCE' && space.clearanceEndsAt
+        ? Math.max(0, Date.parse(space.clearanceEndsAt) - Date.now())
+        : 0;
+    const occupancyClear = occState === 'AVAILABLE' && clearanceRemainingMs === 0;
     checks.push({
       constraint: 'confirmed_physical_vacancy_buffer',
       passed: occupancyClear,
       detail: occupancyClear
-        ? `Physical bay status ${occState} confirmed clear for scheduled pooling`
+        ? `Physical bay status ${occState} confirmed clear and buffer completed for booking`
+        : occState === 'BOOKED' || occState === 'OCCUPIED'
+        ? `Blocked: bay currently ${occState} and stays closed until checkout and turnaround buffer complete.`
         : occState === 'OVERSTAY'
         ? 'Blocked: previous vehicle is in OVERSTAY beyond booked end time (never auto-released on timer).'
         : occState === 'DEPARTURE_PENDING'
         ? 'Blocked: departure indicated by phone; awaiting checkout & physical vacancy confirmation.'
-        : 'Blocked: 15-minute clearance buffer running before bay reopens.',
+        : `Blocked: ${Math.max(1, Math.ceil(clearanceRemainingMs / 60000))}-minute post-checkout clearance buffer running before bay reopens.`,
       evidenceRef: `occupancy:${space.id}:${occState}`,
     });
     if (!occupancyClear) {
       rejectionReasons.push(
-        occState === 'OVERSTAY'
+        occState === 'BOOKED' || occState === 'OCCUPIED'
+          ? 'Slot already allotted until checkout and turnaround buffer finish'
+          : occState === 'OVERSTAY'
           ? 'Bay held in OVERSTAY until previous vehicle departs'
           : occState === 'DEPARTURE_PENDING'
           ? 'Awaiting physical departure confirmation'
-          : 'Turnaround clearance buffer active'
+          : `Turnaround clearance buffer active (${Math.max(1, Math.ceil(clearanceRemainingMs / 60000))}m remaining)`
       );
     }
 
@@ -3279,6 +3631,7 @@ class ParkPoolStore {
     targetCoords?: { lat: number; lng: number }
   ) {
     this.expireStaleHolds();
+    this.syncOccupancyStates();
     const all = this.spaces.map((space) => {
       const facility = this.facilities.find((f) => f.id === space.facilityId)!;
       const ev = this.evaluateSpace(space, facility, reqStartMin, reqEndMin, vehicle, prioritize);
@@ -3321,6 +3674,7 @@ class ParkPoolStore {
     endMin: number;
   }): { ok: boolean; booking?: BookingRecord; error?: string } {
     this.expireStaleHolds();
+    this.syncOccupancyStates();
     if (this.bookingLock) {
       return { ok: false, error: 'CONCURRENT_LOCK_CONTENTION: Transactional exclusion lock active.' };
     }
@@ -3418,6 +3772,9 @@ class ParkPoolStore {
       if (!space.occupancyState || space.occupancyState === 'AVAILABLE') {
         space.occupancyState = 'BOOKED';
         space.activeOccupancyBookingId = record.id;
+        space.vacancyConfirmed = false;
+        space.bufferCompleted = false;
+        space.clearanceEndsAt = undefined;
         space.lastOccupancyEvent = `Held for ${record.id}`;
       }
       this.addAudit(
@@ -3519,8 +3876,9 @@ class ParkPoolStore {
     }
 
     // 3. Check host availability (owner blocks & withdrawals)
+    const todayDate = new Date().toISOString().slice(0, 10);
     const conflictOwner = space.ownerBlocks.find(
-      (ob) => newEnd + space.bufferMinutes > ob.startMin && bk.startMin < ob.endMin
+      (ob) => (!ob.date || ob.date === todayDate) && newEnd + space.bufferMinutes > ob.startMin && bk.startMin < ob.endMin
     );
     if (conflictOwner) {
       const alts = findAlternatives();
@@ -3531,7 +3889,7 @@ class ParkPoolStore {
       };
     }
     const conflictWd = space.withdrawals.find(
-      (wd) => newEnd + space.bufferMinutes > wd.startMin && bk.endMin < wd.endMin
+      (wd) => (!wd.date || wd.date === todayDate) && newEnd + space.bufferMinutes > wd.startMin && bk.endMin < wd.endMin
     );
     if (conflictWd) {
       const alts = findAlternatives();
@@ -3703,6 +4061,7 @@ class ParkPoolStore {
     startMin: number;
     endMin: number;
     label: string;
+    date?: string;
     actorName: string;
   }): {
     ok: boolean;
@@ -3715,11 +4074,13 @@ class ParkPoolStore {
       return { ok: false, protectedBookings: [], error: 'End time must be after start time.' };
     }
 
+    const cleanDate = input.date?.trim() || undefined;
     space.ownerBlocks.push({
       id: `OWN-${Date.now().toString(36).toUpperCase().slice(-5)}`,
       startMin: input.startMin,
       endMin: input.endMin,
       label: input.label.trim() || 'Owner Personal Use Block',
+      date: cleanDate,
       type: 'owner_block',
     });
 
@@ -3727,6 +4088,7 @@ class ParkPoolStore {
     const protectedBookings = this.bookings.filter(
       (b) =>
         b.spaceId === space.id &&
+        (!cleanDate || b.createdAt.slice(0, 10) === cleanDate) &&
         (b.status === 'confirmed' || b.status === 'checked-in' || b.status === 'occupied') &&
         b.startMin < input.endMin &&
         b.endMin + space.bufferMinutes > input.startMin
@@ -3736,7 +4098,7 @@ class ParkPoolStore {
     for (const bk of protectedBookings) {
       bk.hostExceptionFlagged = true;
       bk.auditTrail.push(
-        `${nowIso.slice(11, 19)}Z Owner Block Added (${formatMinutesToTime(input.startMin)}–${formatMinutesToTime(input.endMin)}) -> Existing Booking Protected & Flagged for Review`
+        `${nowIso.slice(11, 19)}Z Owner Block Added (${cleanDate ? `${cleanDate} ` : ''}${formatMinutesToTime(input.startMin)}–${formatMinutesToTime(input.endMin)}) -> Existing Booking Protected & Flagged for Review`
       );
       this.notifications.unshift({
         id: `NTF-${Date.now().toString(36).toUpperCase().slice(-5)}`,
@@ -3755,7 +4117,7 @@ class ParkPoolStore {
     this.addAudit(
       input.actorName,
       'OWNER_BLOCK_ADDED',
-      `Added block ${formatMinutesToTime(input.startMin)}–${formatMinutesToTime(input.endMin)} on ${space.spaceCode}. Protected ${protectedBookings.length} existing confirmed booking(s).`
+      `Added block ${cleanDate ? `${cleanDate} ` : ''}${formatMinutesToTime(input.startMin)}–${formatMinutesToTime(input.endMin)} on ${space.spaceCode}. Protected ${protectedBookings.length} existing confirmed booking(s).`
     );
 
     return { ok: true, protectedBookings };
@@ -3766,6 +4128,7 @@ class ParkPoolStore {
     startMin: number;
     endMin: number;
     reason: string;
+    date?: string;
     actorName: string;
   }): {
     ok: boolean;
@@ -3779,9 +4142,11 @@ class ParkPoolStore {
       return { ok: false, affectedBookings: [], error: 'End time must be after start time.' };
     }
 
+    const cleanDate = input.date?.trim() || undefined;
     const affectedBookings = this.bookings.filter(
       (b) =>
         b.spaceId === space.id &&
+        (!cleanDate || b.createdAt.slice(0, 10) === cleanDate) &&
         (b.status === 'held' || b.status === 'confirmed') &&
         b.startMin < input.endMin &&
         b.endMin > input.startMin
@@ -3793,6 +4158,7 @@ class ParkPoolStore {
       spaceId: space.id,
       startMin: input.startMin,
       endMin: input.endMin,
+      date: cleanDate,
       reason: input.reason.trim() || 'Maintenance / Emergency Host Withdrawal',
       createdAt: nowIso,
       affectedBookingIds: affectedBookings.map((b) => b.id),
@@ -3814,7 +4180,7 @@ class ParkPoolStore {
         bookingId: bk.id,
         type: 'slot_withdrawn',
         title: `Action Needed: Host withdrew ${bk.spaceCode}`,
-        message: `Host withdrew availability ${formatMinutesToTime(input.startMin)}–${formatMinutesToTime(input.endMin)} (${wd.reason}). Choose free nearby rebooking or 100% refund.`,
+        message: `Host withdrew availability ${cleanDate ? `${cleanDate} ` : ''}${formatMinutesToTime(input.startMin)}–${formatMinutesToTime(input.endMin)} (${wd.reason}). Choose free nearby rebooking or 100% refund.`,
         resolutionOptions: bk.withdrawalResolution.options,
         read: false,
         createdAt: nowIso,
@@ -3824,7 +4190,7 @@ class ParkPoolStore {
     this.addAudit(
       input.actorName,
       'FUTURE_AVAILABILITY_WITHDRAWN',
-      `${space.spaceCode} withdrawn ${formatMinutesToTime(input.startMin)}–${formatMinutesToTime(input.endMin)}; ${affectedBookings.length} driver(s) notified.`
+      `${space.spaceCode} withdrawn ${cleanDate ? `${cleanDate} ` : ''}${formatMinutesToTime(input.startMin)}–${formatMinutesToTime(input.endMin)}; ${affectedBookings.length} driver(s) notified.`
     );
 
     return { ok: true, withdrawal: wd, affectedBookings };
@@ -4916,6 +5282,7 @@ class ParkPoolStore {
   public verifyDriverQrAtHostScanner(input: {
     scannedInput: string;
     expectedFacilityId?: string;
+    allowedFacilityIds?: string[];
     actorName: string;
     arrivalMinutesLate?: number;
   }): {
@@ -4970,6 +5337,16 @@ class ParkPoolStore {
       return {
         ok: false,
         error: 'No matching confirmed booking found for this QR code or Gate PIN.',
+      };
+    }
+
+    if (
+      input.allowedFacilityIds &&
+      !input.allowedFacilityIds.includes(targetBooking.facilityId)
+    ) {
+      return {
+        ok: false,
+        error: 'Forbidden: this booking belongs to a facility you do not own.',
       };
     }
 
@@ -5235,12 +5612,8 @@ class ParkPoolStore {
       space.vacancyConfirmed = true;
       space.bufferCompleted = false;
       space.clearanceEndsAt = clearanceEndsAt;
-      space.lastOccupancyEvent = `Vacancy confirmed by ${input.confirmedBy}; ${bufferMins}m turnaround clearance buffer started`;
-    }
-
-    // Automatically complete clearance and reopen space in the background without needing a manual UI action
-    if (space) {
-      this.completeClearanceBufferAndReopen(space.id, `Autonomous Buffer Agent (${input.actorName})`);
+      space.activeOccupancyBookingId = bk.id;
+      space.lastOccupancyEvent = `Checkout confirmed by ${input.confirmedBy}; ${bufferMins}m turnaround clearance buffer active until ${clearanceEndsAt.slice(11, 16)}Z`;
     }
 
     const ev: AutonomousLifecycleEvent = {
@@ -5251,15 +5624,15 @@ class ParkPoolStore {
       facilityName: bk.facilityName,
       trigger: 'departure_confirmed',
       createdAt: nowIso,
-      outcomeSummary: `Checkout & physical departure confirmed. Turnaround buffer and bay reopening completed automatically.`,
-      resultingOccupancyState: space?.occupancyState || 'AVAILABLE',
+      outcomeSummary: `Checkout confirmed. ${bufferMins}-minute turnaround buffer started; bay remains hidden and closed until buffer completes.`,
+      resultingOccupancyState: space?.occupancyState || 'CLEARANCE',
       executionMode: 'deterministic_service',
       steps: [
         {
           stepNumber: 6,
           agentName: 'Clearance Buffer Manager Agent',
-          action: `Automated Turnaround & Reopening`,
-          detail: `Physical vacancy confirmed by ${input.confirmedBy}. Clearance buffer completed and space reopened automatically.`,
+          action: `Checkout Confirmed -> ${bufferMins}m Clearance Buffer Running`,
+          detail: `Physical vacancy confirmed by ${input.confirmedBy}. Turnaround buffer locked until ${clearanceEndsAt.slice(11, 19)}Z before reopening.`,
           status: 'done',
         },
       ],
@@ -5267,8 +5640,8 @@ class ParkPoolStore {
     this.lifecycleEvents.unshift(ev);
     this.addAudit(
       input.actorName,
-      'DEPARTURE_CONFIRMED_AND_REOPENED',
-      `${bk.id} completed; ${bk.spaceCode} automatically cleared and reopened (wallet remaining: ₹${walletResult.balanceInr}).`
+      'DEPARTURE_CONFIRMED_BUFFER_STARTED',
+      `${bk.id} checked out; ${bk.spaceCode} entered ${bufferMins}m clearance buffer (wallet remaining: ₹${walletResult.balanceInr}).`
     );
     return {
       ok: true,
@@ -5306,6 +5679,16 @@ class ParkPoolStore {
         ok: false,
         error: `Safety Block: Physical vacancy is not confirmed on ${space.spaceCode}.`,
       };
+    }
+    if (state === 'CLEARANCE' && space.clearanceEndsAt) {
+      const remainingMs = Date.parse(space.clearanceEndsAt) - Date.now();
+      if (remainingMs > 0) {
+        const minsLeft = Math.max(1, Math.ceil(remainingMs / 60000));
+        return {
+          ok: false,
+          error: `Buffer period still active on ${space.spaceCode} (${minsLeft} min remaining). Bay will open for booking automatically once turnaround buffer completes.`,
+        };
+      }
     }
 
     const upcoming = this.bookings.find(
@@ -5538,6 +5921,7 @@ class ParkPoolStore {
 
   public addFacilityWithSpace(input: {
     providerId?: string;
+    ownerUser?: UserSession;
     name: string;
     providerName: string;
     providerType: 'commercial' | 'community' | 'individual';
@@ -5558,8 +5942,8 @@ class ParkPoolStore {
     // Hard invariant: newly listed facilities & spaces start unapproved/pending_approval
     // Only Admin POST /admin/spaces/:space_id/approve can publish them.
     const idx = this.facilities.length + 1;
-    const facId = `FAC-${String(idx).padStart(2, '0')}`;
-    const spaceId = `BAY-H${idx}`;
+    const facId = `FAC-${Date.now().toString(36).toUpperCase().slice(-4)}-${String(idx).padStart(2, '0')}`;
+    const spaceId = `BAY-H${Date.now().toString(36).toUpperCase().slice(-3)}${idx}`;
     const baseLat = typeof input.lat === 'number' ? input.lat : this.destinationCoords.lat;
     const baseLng = typeof input.lng === 'number' ? input.lng : this.destinationCoords.lng;
     const offsetLat = (Math.random() - 0.5) * 0.0025;
@@ -5571,13 +5955,19 @@ class ParkPoolStore {
 
     const matchedProvider = input.providerId
       ? this.providers.find((p) => p.id === input.providerId)
+      : input.ownerUser
+      ? this.ensureProviderForHost(input.ownerUser)
       : this.providers.find(
           (p) => p.name.toLowerCase() === input.providerName.toLowerCase()
-        ) || this.providers.find((p) => p.id === 'PRV-05');
+        );
+
+    if (!matchedProvider) {
+      throw new Error('Provider record could not be resolved for facility creation.');
+    }
 
     const newFac: Facility = {
       id: facId,
-      providerId: matchedProvider?.id || 'PRV-05',
+      providerId: matchedProvider.id,
       name: input.name,
       providerName: input.providerName,
       providerType: input.providerType,
@@ -5659,9 +6049,8 @@ class ParkPoolStore {
     const idx = this.facilities.findIndex((f) => f.id === facilityId);
     if (idx === -1) return { ok: false, error: 'Facility not found' };
     const fac = this.facilities[idx];
-    const spaceIds = new Set(this.spaces.filter((s) => s.facilityId === facilityId).map((s) => s.id));
     this.facilities.splice(idx, 1);
-    this.spaces = this.spaces.filter((s) => !spaceIds.has(s.facilityId));
+    this.spaces = this.spaces.filter((s) => s.facilityId !== facilityId);
     this.bookings = this.bookings.filter((b) => b.facilityId !== facilityId);
     this.addAudit(actorName, 'FACILITY_DELETED', `Deleted facility ${fac.name} (${facilityId}) and associated spaces.`);
     return { ok: true };
@@ -5670,10 +6059,11 @@ class ParkPoolStore {
   public updateFacility(facilityId: string, updates: Partial<Facility>, actorName: string): { ok: boolean; facility?: Facility; error?: string } {
     const fac = this.facilities.find((f) => f.id === facilityId);
     if (!fac) return { ok: false, error: 'Facility not found' };
-    if (updates.name) fac.name = updates.name;
-    if (updates.address) fac.address = updates.address;
-    if (updates.entranceLabel) fac.entranceLabel = updates.entranceLabel;
-    if (updates.accessInstructions) fac.accessInstructions = updates.accessInstructions;
+    if (updates.name) fac.name = updates.name.trim();
+    if (updates.address) fac.address = updates.address.trim();
+    if (updates.zone) fac.zone = updates.zone.trim();
+    if (updates.entranceLabel) fac.entranceLabel = updates.entranceLabel.trim();
+    if (updates.accessInstructions) fac.accessInstructions = updates.accessInstructions.trim();
     fac.lastUpdatedIso = new Date().toISOString();
     this.addAudit(actorName, 'FACILITY_UPDATED', `Updated facility ${fac.name} (${facilityId}).`);
     return { ok: true, facility: fac };
@@ -5682,8 +6072,10 @@ class ParkPoolStore {
   public assignFacilityDriver(facilityId: string, driverEmail?: string, actorName?: string): { ok: boolean; facility?: Facility; error?: string } {
     const fac = this.facilities.find((f) => f.id === facilityId);
     if (!fac) return { ok: false, error: 'Facility not found' };
-    (fac as any).assignedDriverEmail = driverEmail || undefined;
-    this.addAudit(actorName || 'Host', 'FACILITY_DRIVER_ASSIGNED', `Assigned facility ${fac.name} to driver ${driverEmail || 'None'}.`);
+    const cleanDriver = typeof driverEmail === 'string' && driverEmail.trim() ? driverEmail.trim() : undefined;
+    fac.assignedDriverEmail = cleanDriver;
+    fac.lastUpdatedIso = new Date().toISOString();
+    this.addAudit(actorName || 'Host', 'FACILITY_DRIVER_ASSIGNED', `Assigned facility ${fac.name} to driver ${cleanDriver || 'None'}.`);
     return { ok: true, facility: fac };
   }
 
@@ -5718,6 +6110,11 @@ class ParkPoolStore {
       createdAt: nowIso,
       processedAt: nowIso,
     });
+    const space = this.spaces.find((s) => s.id === bk.spaceId);
+    if (space && space.occupancyState !== 'CLEARANCE') {
+      space.occupancyState = 'AVAILABLE';
+      this.syncOccupancyStates();
+    }
     this.addAudit(actorName, 'BOOKING_CANCELLED_BY_HOST', `Cancelled booking ${bk.id} and refunded ₹${bk.totalAmountInr} to driver.`);
     return { ok: true, booking: bk };
   }

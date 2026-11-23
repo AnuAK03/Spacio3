@@ -1,27 +1,25 @@
 import React, { useState } from 'react';
 import {
+  ArrowCounterClockwise,
   Bell,
-  Bot,
-  CalendarClock,
-  CheckCircle2,
+  Calendar,
+  CheckCircle,
   Clock,
+  ClockCounterClockwise,
+  CurrencyInr,
   FileText,
-  History,
-  IndianRupee,
-  LogOut,
   MapPin,
-  Navigation,
+  NavigationArrow,
   QrCode,
-  Radio,
-  RotateCcw,
-  ScanLine,
-  ShieldAlert,
+  Robot,
+  Scan,
   ShieldCheck,
+  ShieldWarning,
   Star,
   Wallet,
   X,
   XCircle,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import {
   AutonomousLifecycleEvent,
   BengaluruLocation,
@@ -111,11 +109,11 @@ function fmt12(min: number): string {
 
 function friendlyStatusLabel(bk: BookingRecord): { label: string; colorClass: string } {
   if (bk.status === 'held') {
-    return { label: 'Reserved — Waiting for Payment', colorClass: 'text-[#C83709]' };
+    return { label: 'Reserved, waiting for payment', colorClass: 'text-[#C83709]' };
   }
   if (bk.status === 'confirmed') {
     return {
-      label: bk.paymentStatus === 'paid' ? 'Confirmed & Paid' : 'Confirmed',
+      label: bk.paymentStatus === 'paid' ? 'Confirmed and paid' : 'Confirmed',
       colorClass: 'text-[#047857]',
     };
   }
@@ -177,7 +175,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [walletBusy, setWalletBusy] = useState(false);
   const [showLedger, setShowLedger] = useState(false);
-  const [gpsWatchBookingId, setGpsWatchBookingId] = useState<string | null>(null);
   const [pastFilter, setPastFilter] = useState<
     'all' | 'completed' | 'refunded' | 'cancelled'
   >('all');
@@ -256,69 +253,69 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     : undefined;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Compact Header & Slim Summary Row */}
-      <section className="rounded-2xl border border-black/[0.08] bg-white/92 p-5 shadow-sm backdrop-blur-md">
+      <section className="rounded-2xl border border-black/[0.08] bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="font-display text-2xl font-bold text-[#111827]">
+            <h1 className="heading-5 text-[#111827]">
               {firstName}&apos;s Booking History
             </h1>
-            <p className="mt-0.5 text-sm text-[#4B5563]">
+            <p className="body-6 mt-1 text-[#4B5563]">
               Your active parking passes, entry QR codes, payments, and past trips in one place.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={onOpenProfile}
-              className="flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl border border-black/[0.08] bg-[#F8F7F4] px-3.5 py-2 text-xs font-semibold text-[#111827] transition-colors hover:border-[#D93F0B]"
+              className="button-xsm flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl border border-black/[0.08] bg-[#F8F7F4] px-3 py-2 text-[#111827] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#D93F0B] active:scale-[0.98]"
             >
-              <ShieldCheck className="h-4 w-4 text-[#047857]" />
+              <ShieldCheck className="h-4 w-4 text-[#047857]" weight="fill" />
               <span>
                 {driverProfile
                   ? `${driverProfile.plateNumber} · License ${driverProfile.licenseNumber}`
-                  : 'Add License & Vehicle'}
+                  : 'Add license and vehicle'}
               </span>
             </button>
             <button
               type="button"
               onClick={onFindParking}
-              className="whitespace-nowrap shrink-0 rounded-xl bg-gradient-to-r from-[#E0430D] to-[#C83709] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:brightness-110"
+              className="button-xsm whitespace-nowrap shrink-0 rounded-xl bg-[#C83709] px-3 py-2 text-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#A62B05] active:scale-[0.98]"
             >
-              Book a Spot
+              Book a spot
             </button>
           </div>
         </div>
 
         {/* Reduced Compact Summary Strip */}
-        <div className="mt-4 grid grid-cols-3 gap-2.5">
+        <div className="mt-4 grid grid-cols-3 gap-3">
           <div className="flex items-center justify-between rounded-xl border border-[#FED7AA] bg-[#FFF5F0] px-3 py-2">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-[#9A3412]">
-              <CalendarClock className="h-3.5 w-3.5 shrink-0 text-[#C83709]" />
+            <span className="caption-3 flex items-center gap-1.5 text-[#9A3412]">
+              <Calendar className="h-3.5 w-3.5 shrink-0 text-[#C83709]" weight="bold" />
               <span className="truncate">Active</span>
             </span>
-            <span className="font-mono text-base font-bold tabular-nums text-[#C83709]">
+            <span className="title-3 font-mono font-semibold tabular-nums text-[#C83709]">
               {activeBookings.length}
             </span>
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-indigo-200/80 bg-indigo-50/75 px-3 py-2">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-[#3730A3]">
-              <Clock className="h-3.5 w-3.5 shrink-0 text-[#4338CA]" />
+          <div className="flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2">
+            <span className="caption-3 flex items-center gap-1.5 text-[#3730A3]">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-[#4338CA]" weight="bold" />
               <span className="truncate">Completed</span>
             </span>
-            <span className="font-mono text-base font-bold tabular-nums text-[#4338CA]">
+            <span className="title-3 font-mono font-semibold tabular-nums text-[#4338CA]">
               {completedPastCount}
             </span>
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-3 py-2">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-[#065F46]">
-              <IndianRupee className="h-3.5 w-3.5 shrink-0 text-[#047857]" />
+          <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+            <span className="caption-3 flex items-center gap-1.5 text-[#065F46]">
+              <CurrencyInr className="h-3.5 w-3.5 shrink-0 text-[#047857]" weight="bold" />
               <span className="truncate">Refunds</span>
             </span>
-            <span className="font-mono text-base font-bold tabular-nums text-[#047857]">
+            <span className="title-3 font-mono font-semibold tabular-nums text-[#047857]">
               {refunds.length + disputes.length}
             </span>
           </div>
@@ -327,24 +324,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Prepaid Parking Balance Wallet */}
       {wallet && (
-        <section className="rounded-2xl border border-black/[0.08] bg-white/92 p-5 shadow-sm backdrop-blur-md">
+        <section className="rounded-2xl border border-black/[0.08] bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-[#047857]">
-                <Wallet className="h-5 w-5" />
+                <Wallet className="h-5 w-5" weight="bold" />
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-base font-bold text-[#111827]">
+                  <h2 className="title-3 text-[#111827]">
                     Prepaid Parking Balance
                   </h2>
                   {wallet.bookingRestricted && (
-                    <span className="text-xs font-bold text-rose-700">
-                      · Bookings Paused (₹{wallet.unpaidDueInr} Unpaid Due)
+                    <span className="caption-3 text-rose-700">
+                      · Bookings paused (₹{wallet.unpaidDueInr} unpaid due)
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-[#4B5563]">
+                <p className="caption-5 text-[#4B5563]">
                   Used for instant bookings, accepted extension offers, and automatic overstay settlement.
                 </p>
               </div>
@@ -352,8 +349,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             <div className="flex flex-wrap items-center gap-2">
               <div className="mr-2 text-right">
-                <div className="text-[11px] font-medium text-[#4B5563]">Available Balance</div>
-                <div className="font-mono text-2xl font-extrabold tabular-nums text-[#047857]">
+                <div className="caption-4 text-[#4B5563]">Available balance</div>
+                <div className="heading-5 font-mono tabular-nums text-[#047857]">
                   ₹{wallet.balanceInr}
                 </div>
               </div>
@@ -370,7 +367,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       setWalletBusy(false);
                     }
                   }}
-                  className="whitespace-nowrap shrink-0 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 font-mono text-xs font-bold text-[#047857] hover:bg-emerald-100 disabled:opacity-50"
+                  className="button-xsm whitespace-nowrap shrink-0 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 font-mono text-[#047857] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-emerald-100 active:scale-[0.98] disabled:opacity-50"
                 >
                   +₹{amt}
                 </button>
@@ -378,16 +375,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 type="button"
                 onClick={() => setShowLedger((s) => !s)}
-                className="whitespace-nowrap shrink-0 rounded-xl border border-black/[0.08] bg-[#F8F7F4] px-3 py-2 text-xs font-semibold text-[#111827] hover:bg-black/[0.04]"
+                className="button-xsm whitespace-nowrap shrink-0 rounded-xl border border-black/[0.08] bg-[#F8F7F4] px-3 py-2 text-[#111827] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black/[0.04]"
               >
-                {showLedger ? 'Hide Ledger' : `Ledger (${wallet.ledger.length})`}
+                {showLedger ? 'Hide ledger' : `Ledger (${wallet.ledger.length})`}
               </button>
             </div>
           </div>
 
           {wallet.bookingRestricted && (
-            <div className="mt-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-900">
-              <ShieldAlert className="h-4 w-4 shrink-0 text-rose-600" />
+            <div className="caption-4 mt-3 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-rose-900">
+              <ShieldWarning className="h-4 w-4 shrink-0 text-rose-600" weight="fill" />
               <span>
                 Your wallet has ₹{wallet.unpaidDueInr} in unpaid overstay charges. Add funds above to clear your balance and unlock new bookings.
               </span>
@@ -395,24 +392,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
 
           {showLedger && (
-            <div className="mt-3 max-h-48 space-y-1.5 overflow-y-auto border-t border-black/[0.06] pt-3 text-xs">
+            <div className="mt-3 max-h-48 space-y-2 overflow-y-auto rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-3">
               {wallet.ledger.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-[#F8F7F4] px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-black/[0.06] bg-white px-3 py-2"
                 >
                   <div className="min-w-0">
-                    <div className="truncate font-semibold text-[#111827]">{item.description}</div>
-                    <div className="text-[11px] text-[#4B5563]">
+                    <div className="caption-3 truncate text-[#111827]">{item.description}</div>
+                    <div className="caption-5 text-[#4B5563]">
                       {new Date(item.timestamp).toLocaleString()} · Balance after: ₹{item.balanceAfterInr}
                     </div>
                   </div>
                   <span
-                    className={`shrink-0 font-mono font-bold tabular-nums ${
+                    className={`caption-3 shrink-0 font-mono tabular-nums ${
                       item.amountInr >= 0 ? 'text-[#047857]' : 'text-[#C83709]'
                     }`}
                   >
-                    {item.amountInr >= 0 ? `+₹${item.amountInr}` : `-₹${Math.abs(item.amountInr)}`}
+                    {item.amountInr >= 0 ? `+₹${item.amountInr}` : `Debit ₹${Math.abs(item.amountInr)}`}
                   </span>
                 </div>
               ))}
@@ -423,25 +420,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       {/* Important Schedule Updates */}
       {unreadNotifications.length > 0 && (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 shadow-sm">
-          <div className="mb-2.5 flex items-center gap-2 font-display text-sm font-bold text-amber-950">
-            <Bell className="h-4 w-4 text-amber-700" />
-            <span>Important Updates ({unreadNotifications.length})</span>
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+          <div className="title-4 mb-3 flex items-center gap-2 text-amber-950">
+            <Bell className="h-4 w-4 text-amber-700" weight="fill" />
+            <span>Important updates ({unreadNotifications.length})</span>
           </div>
           <div className="space-y-2">
             {unreadNotifications.map((ntf) => (
               <div
                 key={ntf.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200/80 bg-white p-3 text-xs"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white p-3"
               >
                 <div className="space-y-0.5">
-                  <div className="font-bold text-[#111827]">{ntf.title}</div>
-                  <div className="text-[#4B5563]">{ntf.message}</div>
+                  <div className="caption-3 text-[#111827]">{ntf.title}</div>
+                  <div className="caption-5 text-[#4B5563]">{ntf.message}</div>
                 </div>
                 <button
                   type="button"
                   onClick={() => void onMarkNotificationRead(ntf.id)}
-                  className="whitespace-nowrap shrink-0 rounded-lg border border-black/[0.08] px-3 py-1.5 text-xs font-semibold text-[#111827] hover:bg-black/[0.04]"
+                  className="button-xsm whitespace-nowrap shrink-0 rounded-lg border border-black/[0.08] px-3 py-2 text-[#111827] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black/[0.04]"
                 >
                   Got it
                 </button>
@@ -451,22 +448,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </section>
       )}
 
-
       {/* Active Reservations — Entry QR Revealed Only Upon Pressing Show QR Code */}
-      <section className="rounded-2xl border border-black/[0.08] bg-white/92 p-5 sm:p-6 shadow-sm backdrop-blur-md">
-        <h2 className="mb-4 font-display text-lg font-bold text-[#111827]">
-          Upcoming &amp; Active Bookings
+      <section className="rounded-2xl border border-black/[0.08] bg-white p-5 sm:p-6 shadow-sm">
+        <h2 className="title-2 mb-4 text-[#111827]">
+          Upcoming and Active Bookings
         </h2>
 
         {activeBookings.length === 0 ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-black/[0.12] bg-[#F8F7F4]/80 p-5 text-xs text-[#4B5563]">
+          <div className="caption-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-black/[0.12] bg-[#F8F7F4] p-5 text-[#4B5563]">
             <span>You have no upcoming or ongoing parking bookings right now.</span>
             <button
               type="button"
               onClick={onFindParking}
-              className="whitespace-nowrap shrink-0 rounded-lg bg-[#111827] px-3.5 py-2 font-bold text-white hover:bg-black"
+              className="button-xsm whitespace-nowrap shrink-0 rounded-lg bg-[#111827] px-3 py-2 text-white transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black active:scale-[0.98]"
             >
-              Find Parking
+              Find parking
             </button>
           </div>
         ) : (
@@ -479,25 +475,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               return (
                 <div
                   key={bk.id}
-                  className="rounded-xl border border-black/[0.08] bg-[#F8F7F4]/90 p-4"
+                  className="rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-4"
                 >
                   <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-                    {/* Left: Plain-English Booking Summary */}
+                    {/* Left: Plain English Booking Summary */}
                     <div className="min-w-0 flex-1 space-y-2">
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className={`font-bold ${statusInfo.colorClass}`}>
+                      <div className="caption-4 flex flex-wrap items-center gap-2">
+                        <span className={`caption-3 ${statusInfo.colorClass}`}>
                           {statusInfo.label}
                         </span>
                         <span aria-hidden="true" className="text-black/20">
                           ·
                         </span>
-                        <span className="font-semibold text-[#111827]">
-                          {fmt12(bk.startMin)} – {fmt12(bk.endMin)}
+                        <span className="caption-3 text-[#111827]">
+                          {fmt12(bk.startMin)} to {fmt12(bk.endMin)}
                         </span>
                         <span aria-hidden="true" className="text-black/20">
                           ·
                         </span>
-                        <span className="font-mono font-bold text-[#111827]">
+                        <span className="caption-3 font-mono text-[#111827]">
                           ₹{bk.totalAmountInr}
                         </span>
                         {bk.refundStatus && bk.refundStatus !== 'none' && (
@@ -505,7 +501,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             <span aria-hidden="true" className="text-black/20">
                               ·
                             </span>
-                            <span className="font-semibold text-[#047857]">
+                            <span className="caption-3 text-[#047857]">
                               Refund {bk.refundStatus}
                               {bk.refundAmountInr ? ` (₹${bk.refundAmountInr})` : ''}
                             </span>
@@ -513,13 +509,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         )}
                       </div>
 
-                      <div className="font-display text-base font-bold text-[#111827]">
+                      <div className="title-3 text-[#111827]">
                         {bk.facilityName} · Spot {bk.spaceCode}
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#374151]">
+                      <div className="caption-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[#374151]">
                         <span className="flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5 text-[#C83709]" />
+                          <MapPin className="h-3.5 w-3.5 text-[#C83709]" weight="fill" />
                           {bk.entranceLabel}
                         </span>
                         <span aria-hidden="true">·</span>
@@ -529,54 +525,54 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         </span>
                         <span aria-hidden="true">·</span>
                         <span>
-                          Spot Access PIN:{' '}
+                          Spot access PIN:{' '}
                           <strong className="font-mono text-[#4338CA]">{bk.accessCode}</strong>
                         </span>
                       </div>
 
-                      <div className="rounded-lg border border-black/[0.06] bg-white px-3 py-1.5 text-[11px] text-[#374151]">
-                        <span className="font-semibold text-[#111827]">Price Breakdown: </span>
+                      <div className="caption-5 rounded-lg border border-black/[0.06] bg-white px-3 py-2 text-[#374151]">
+                        <span className="caption-3 text-[#111827]">Price breakdown: </span>
                         <span className="font-mono">
-                          Parking ₹{bk.baseAmountInr} + Service Fee ₹{bk.platformFeeInr} + GST ₹
+                          Parking ₹{bk.baseAmountInr} + Service fee ₹{bk.platformFeeInr} + GST ₹
                           {bk.gstInr} = <strong className="text-[#111827]">₹{bk.totalAmountInr}</strong>
                         </span>
                       </div>
 
-                      <p className="text-xs text-[#4B5563]">
+                      <p className="caption-5 text-[#4B5563]">
                         {bk.status === 'held'
                           ? 'Complete payment within 10 minutes to lock this spot.'
                           : 'Tap Show QR Code when arriving at your spot, or tap Scan Spot Wall QR if no attendant is present.'}
                       </p>
 
                       {bk.overstayStatus === 'flagged_overstay' && (
-                        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-900">
-                          <strong>Overstay Fee Applied:</strong> You stayed past your booked time
+                        <div className="caption-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-900">
+                          <strong>Overstay fee applied:</strong> You stayed past your booked time
                           (+₹{bk.overstayPenaltyInr}). Please exit the spot as soon as possible.
                         </div>
                       )}
 
                       {bk.overstayResolution && (
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-950">
+                        <div className="caption-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-950">
                           <span>
-                            <strong>Spot Protection Active:</strong> {bk.overstayResolution.detail}
+                            <strong>Spot protection active:</strong> {bk.overstayResolution.detail}
                           </span>
                           {bk.overstayResolution.status === 'choice_required' && (
                             <div className="flex gap-2">
                               <button
                                 type="button"
                                 onClick={() => void onResolveOverstayImpact(bk.id, 'reschedule')}
-                                className="rounded-lg bg-[#047857] px-2.5 py-1 font-bold text-white"
+                                className="button-xsm rounded-md bg-[#047857] px-3 py-2 text-white"
                               >
-                                Move Time (Free)
+                                Move time (free)
                               </button>
                               <button
                                 type="button"
                                 onClick={() =>
                                   void onResolveOverstayImpact(bk.id, 'refund_with_credit')
                                 }
-                                className="rounded-lg border border-emerald-400 bg-white px-2.5 py-1 font-bold text-[#047857]"
+                                className="button-xsm rounded-md border border-emerald-400 bg-white px-3 py-2 text-[#047857]"
                               >
-                                Full Refund + ₹50 Credit
+                                Full refund + ₹50 credit
                               </button>
                             </div>
                           )}
@@ -584,16 +580,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       )}
 
                       {bk.hostExceptionFlagged && (
-                        <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs text-indigo-900">
-                          Your confirmed booking remains protected while we check a host schedule
-                          update.
+                        <div className="caption-4 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-indigo-900">
+                          Your confirmed booking remains protected while we check a host schedule update.
                         </div>
                       )}
 
                       {bk.withdrawalResolution && (
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-950">
+                        <div className="caption-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-950">
                           <span>
-                            <strong>Parking Host Cancelled This Slot:</strong>{' '}
+                            <strong>Parking host cancelled this slot:</strong>{' '}
                             {bk.withdrawalResolution.status === 'affected'
                               ? 'Choose how you would like to proceed:'
                               : bk.withdrawalResolution.resolvedOption}
@@ -603,16 +598,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => void onResolveWithdrawal(bk.id, 'rebook')}
-                                className="rounded-lg bg-[#047857] px-2.5 py-1 font-bold text-white"
+                                className="button-xsm rounded-md bg-[#047857] px-3 py-2 text-white"
                               >
-                                Move Nearby (Free)
+                                Move nearby (free)
                               </button>
                               <button
                                 type="button"
                                 onClick={() => void onResolveWithdrawal(bk.id, 'refund')}
-                                className="rounded-lg border border-rose-300 bg-white px-2.5 py-1 font-bold text-rose-700"
+                                className="button-xsm rounded-md border border-rose-300 bg-white px-3 py-2 text-rose-700"
                               >
-                                Full Refund
+                                Full refund
                               </button>
                             </div>
                           )}
@@ -624,7 +619,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           {bk.extensionRequests.map((ext) => (
                             <div
                               key={ext.id}
-                              className="rounded-lg border border-black/[0.06] bg-white px-3 py-1.5 text-xs text-[#374151]"
+                              className="caption-4 rounded-lg border border-black/[0.06] bg-white px-3 py-2 text-[#374151]"
                             >
                               Extra time until <strong>{fmt12(ext.requestedEndMin)}</strong> (+₹
                               {ext.additionalTotalInr}):{' '}
@@ -649,8 +644,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       )}
 
                       {alts.length > 0 && (
-                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-950">
-                          <div className="font-bold">Nearby Open Spots Available Instead:</div>
+                        <div className="caption-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-950">
+                          <div className="caption-3">Nearby open spots available instead:</div>
                           <div className="mt-1 flex flex-wrap gap-2">
                             {alts.map((a) => (
                               <span key={a.spaceId}>
@@ -666,57 +661,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         const pendingOffers = (bk.extensionOffers || []).filter(
                           (o) => o.status === 'pending_driver_acceptance'
                         );
-                        const linkedSpace = spaces.find((s) => s.id === bk.spaceId);
-                        const occState = linkedSpace?.occupancyState;
                         return (
                           <>
-                            {occState && (
-                              <div className="rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-xs">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <span className="font-semibold text-[#374151]">
-                                    Live Bay State:{' '}
-                                    <strong
-                                      className={`font-mono ${
-                                        occState === 'OVERSTAY'
-                                          ? 'text-rose-700'
-                                          : occState === 'DEPARTURE_PENDING'
-                                          ? 'text-amber-700'
-                                          : occState === 'CLEARANCE'
-                                          ? 'text-[#4338CA]'
-                                          : 'text-[#047857]'
-                                      }`}
-                                    >
-                                      {occState}
-                                    </strong>
-                                  </span>
-                                  {linkedSpace?.lastOccupancyEvent && (
-                                    <span className="text-[11px] text-[#4B5563]">
-                                      {linkedSpace.lastOccupancyEvent}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
                             {pendingOffers.map((offer) => (
                               <div
                                 key={offer.id}
-                                className="rounded-xl border-2 border-indigo-200 bg-indigo-50/80 p-3 text-xs text-indigo-950"
+                                className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-3 text-indigo-950"
                               >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <span className="flex items-center gap-1.5 font-bold">
-                                    <Bot className="h-4 w-4 text-[#4338CA]" />
-                                    Extension Offer (+{offer.additionalMinutes}m until{' '}
-                                    {fmt12(offer.requestedEndMin)}) — ₹{offer.additionalTotalInr}
+                                  <span className="caption-3 flex items-center gap-1.5">
+                                    <Robot className="h-4 w-4 text-[#4338CA]" weight="bold" />
+                                    Extension offer (+{offer.additionalMinutes}m until{' '}
+                                    {fmt12(offer.requestedEndMin)}), ₹{offer.additionalTotalInr}
                                   </span>
-                                  <span className="font-mono text-[11px] font-semibold text-[#4338CA]">
-                                    Awaiting Your Acceptance
+                                  <span className="caption-4 font-mono text-[#4338CA]">
+                                    Awaiting your acceptance
                                   </span>
                                 </div>
-                                <p className="mt-1 text-[11px] text-[#374151]">
+                                <p className="caption-5 mt-1 text-[#374151]">
                                   {offer.pricingReason} {offer.providerApprovalNote}
                                 </p>
-                                <div className="mt-2.5 flex flex-wrap gap-2">
+                                <div className="mt-3 flex flex-wrap gap-2">
                                   <button
                                     type="button"
                                     disabled={isBusy}
@@ -728,9 +693,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                         setBusyId(null);
                                       }
                                     }}
-                                    className="rounded-lg bg-[#047857] px-3 py-1.5 font-bold text-white hover:bg-[#065F46] disabled:opacity-50"
+                                    className="button-xsm rounded-lg bg-[#047857] px-3 py-2 text-white hover:bg-[#065F46] disabled:opacity-50"
                                   >
-                                    Accept &amp; Pay ₹{offer.additionalTotalInr} from Wallet
+                                    Accept and pay ₹{offer.additionalTotalInr} from Wallet
                                   </button>
                                   <button
                                     type="button"
@@ -743,146 +708,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                         setBusyId(null);
                                       }
                                     }}
-                                    className="rounded-lg border border-black/[0.1] bg-white px-3 py-1.5 font-bold text-[#374151] hover:bg-black/[0.04]"
+                                    className="button-xsm rounded-lg border border-black/[0.1] bg-white px-3 py-2 text-[#374151] hover:bg-black/[0.04]"
                                   >
-                                    Decline &amp; Leave Now
+                                    Decline and leave now
                                   </button>
                                 </div>
                               </div>
                             ))}
-
-                            {(bk.status === 'checked-in' || bk.status === 'occupied') && (
-                              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <span className="flex items-center gap-1.5 font-bold text-[#111827]">
-                                    <Radio className="h-3.5 w-3.5 text-[#047857]" />
-                                    Smart Exit &amp; Geofence Departure Detection
-                                  </span>
-                                  {bk.departureSignal && (
-                                    <span className="font-mono text-[11px] font-bold text-amber-800">
-                                      DEPARTURE_PENDING ({bk.departureSignal.type})
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="mt-1 text-[11px] text-[#4B5563]">
-                                  GPS monitors your smartphone location—not the vehicle itself—so the
-                                  bay stays safely locked until checkout is confirmed and the 15m
-                                  clearance buffer runs.
-                                </p>
-                                <div className="mt-2.5 flex flex-wrap gap-2">
-                                  <button
-                                    type="button"
-                                    disabled={isBusy}
-                                    onClick={async () => {
-                                      setBusyId(bk.id);
-                                      try {
-                                        await onSendDepartureSignal(bk.id, 'im_leaving_button');
-                                      } finally {
-                                        setBusyId(null);
-                                      }
-                                    }}
-                                    className="flex items-center gap-1 rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-bold text-amber-900 hover:bg-amber-50"
-                                  >
-                                    <LogOut className="h-3.5 w-3.5" />
-                                    <span>I&apos;m Leaving</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={isBusy}
-                                    onClick={() => {
-                                      if (gpsWatchBookingId === bk.id) {
-                                        setGpsWatchBookingId(null);
-                                        return;
-                                      }
-                                      setGpsWatchBookingId(bk.id);
-                                      if (navigator.geolocation) {
-                                        navigator.geolocation.getCurrentPosition(
-                                          async (pos) => {
-                                            const fac = facilities.find(
-                                              (f) => f.id === bk.facilityId
-                                            );
-                                            if (!fac) return;
-                                            const R = 6371000;
-                                            const toRad = (d: number) => (d * Math.PI) / 180;
-                                            const dLat = toRad(
-                                              pos.coords.latitude - fac.entranceLat
-                                            );
-                                            const dLng = toRad(
-                                              pos.coords.longitude - fac.entranceLng
-                                            );
-                                            const a =
-                                              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                                              Math.cos(toRad(fac.entranceLat)) *
-                                                Math.cos(toRad(pos.coords.latitude)) *
-                                                Math.sin(dLng / 2) *
-                                                Math.sin(dLng / 2);
-                                            const dist = Math.round(
-                                              R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-                                            );
-                                            if (dist > 120) {
-                                              await onSendDepartureSignal(
-                                                bk.id,
-                                                'geofence_exit',
-                                                dist
-                                              );
-                                            }
-                                          },
-                                          () => {
-                                            // Ignore GPS decline when testing manually
-                                          },
-                                          { enableHighAccuracy: true, timeout: 6000 }
-                                        );
-                                      }
-                                    }}
-                                    className={`rounded-lg border px-3 py-1.5 font-semibold ${
-                                      gpsWatchBookingId === bk.id
-                                        ? 'border-[#4338CA] bg-indigo-50 text-[#4338CA]'
-                                        : 'border-black/[0.1] bg-white text-[#374151]'
-                                    }`}
-                                  >
-                                    {gpsWatchBookingId === bk.id
-                                      ? 'GPS Geofence Armed'
-                                      : 'Arm GPS Geofence'}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={isBusy}
-                                    onClick={async () => {
-                                      setBusyId(bk.id);
-                                      try {
-                                        await onSendDepartureSignal(bk.id, 'geofence_exit', 185);
-                                      } finally {
-                                        setBusyId(null);
-                                      }
-                                    }}
-                                    className="rounded-lg border border-black/[0.1] bg-white px-3 py-1.5 font-semibold text-[#374151] hover:bg-black/[0.04]"
-                                  >
-                                    Test GPS Exit (&gt;150m)
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={isBusy}
-                                    onClick={async () => {
-                                      setBusyId(bk.id);
-                                      try {
-                                        await onConfirmDeparture(bk.id);
-                                      } finally {
-                                        setBusyId(null);
-                                      }
-                                    }}
-                                    className="rounded-lg bg-[#047857] px-3 py-1.5 font-bold text-white hover:bg-[#065F46]"
-                                  >
-                                    Confirm Checkout &amp; Left Bay
-                                  </button>
-                                </div>
-                              </div>
-                            )}
                           </>
                         );
                       })()}
 
                       {/* Action Buttons */}
-                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <div className="flex flex-wrap items-center gap-2 pt-2">
                         {bk.status === 'held' && (
                           <>
                             <button
@@ -900,9 +738,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                   setBusyId(null);
                                 }
                               }}
-                              className="flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg bg-[#047857] px-3.5 py-2 text-xs font-bold text-white transition-all hover:bg-[#065F46] disabled:opacity-50"
+                              className="button-xsm flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg bg-[#047857] px-3 py-2 text-white transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#065F46] active:scale-[0.98] disabled:opacity-50"
                             >
-                              <Wallet className="h-3.5 w-3.5" />
+                              <Wallet className="h-3.5 w-3.5" weight="bold" />
                               <span>Pay ₹{bk.totalAmountInr} via Wallet</span>
                             </button>
                             {wallet &&
@@ -918,7 +756,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                       setWalletBusy(false);
                                     }
                                   }}
-                                  className="whitespace-nowrap shrink-0 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-bold text-[#047857] hover:bg-emerald-100 disabled:opacity-50"
+                                  className="button-xsm whitespace-nowrap shrink-0 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-[#047857] hover:bg-emerald-100 disabled:opacity-50"
                                 >
                                   + Add ₹500 to Wallet
                                 </button>
@@ -935,17 +773,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => void onBookingAction(bk.id, 'checkin')}
-                                  className="flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg bg-[#111827] px-3 py-2 text-xs font-bold text-white hover:bg-black"
+                                  className="button-xsm flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg bg-[#111827] px-3 py-2 text-white transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black active:scale-[0.98]"
                                 >
-                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                                  <span>Arrived &amp; Check In</span>
+                                  <CheckCircle className="h-3.5 w-3.5 text-emerald-400" weight="fill" />
+                                  <span>Arrived and check in</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setWallScannerBookingId(bk.id)}
-                                  className="flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-indigo-200 bg-indigo-50/75 px-3 py-2 text-xs font-bold text-[#4338CA] hover:bg-indigo-100"
+                                  className="button-xsm flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[#4338CA] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-indigo-100"
                                 >
-                                  <ScanLine className="h-3.5 w-3.5" />
+                                  <Scan className="h-3.5 w-3.5" weight="bold" />
                                   <span>Scan Spot Wall QR</span>
                                 </button>
                               </>
@@ -953,33 +791,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             <button
                               type="button"
                               onClick={() => setFullQrBookingId(bk.id)}
-                              className="flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-semibold text-[#047857] hover:bg-emerald-50"
+                              className="button-xsm flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-[#047857] hover:bg-emerald-50"
                             >
-                              <QrCode className="h-3.5 w-3.5" />
-                              <span>Show QR Code</span>
+                              <QrCode className="h-3.5 w-3.5" weight="bold" />
+                              <span>Show QR code</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => setNavBookingId(bk.id)}
-                              className="flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-[#4338CA] hover:bg-indigo-50"
+                              className="button-xsm flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-[#4338CA] hover:bg-indigo-50"
                             >
-                              <Navigation className="h-3.5 w-3.5" />
-                              <span>Parking Spot Directions</span>
+                              <NavigationArrow className="h-3.5 w-3.5" weight="fill" />
+                              <span>Parking spot directions</span>
                             </button>
                             <button
                               type="button"
                               disabled={isBusy}
                               onClick={() => void handleExtensionClick(bk.id, 30)}
-                              className="whitespace-nowrap shrink-0 rounded-lg border border-black/[0.1] bg-white px-3 py-2 text-xs font-semibold text-[#111827] hover:bg-black/[0.03]"
+                              className="button-xsm whitespace-nowrap shrink-0 rounded-lg border border-black/[0.1] bg-white px-3 py-2 text-[#111827] hover:bg-black/[0.03]"
                             >
-                              Add 30 Mins
+                              Add 30 mins
                             </button>
                             <button
                               type="button"
                               onClick={() => void onConfirmDeparture(bk.id)}
-                              className="whitespace-nowrap shrink-0 rounded-lg bg-[#047857] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#065F46]"
+                              className="button-xsm whitespace-nowrap shrink-0 rounded-lg bg-[#047857] px-3 py-2 text-white hover:bg-[#065F46]"
                             >
-                              Finish &amp; Exit
+                              Finish and exit
                             </button>
                           </>
                         )}
@@ -987,9 +825,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <button
                           type="button"
                           onClick={() => setInvoiceBookingId(bk.id)}
-                          className="flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-xs font-semibold text-[#111827] hover:bg-black/[0.03]"
+                          className="button-xsm flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-[#111827] hover:bg-black/[0.03]"
                         >
-                          <FileText className="h-3.5 w-3.5 text-[#047857]" />
+                          <FileText className="h-3.5 w-3.5 text-[#047857]" weight="bold" />
                           <span>Receipt</span>
                         </button>
 
@@ -1000,9 +838,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                               setDisputeBookingId(disputeBookingId === bk.id ? null : bk.id);
                               setDisputeAmount(bk.totalAmountInr);
                             }}
-                            className="whitespace-nowrap shrink-0 rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-xs font-semibold text-[#4B5563] hover:text-[#111827]"
+                            className="button-xsm whitespace-nowrap shrink-0 rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-[#4B5563] hover:text-[#111827]"
                           >
-                            Request Refund
+                            Request refund
                           </button>
                         )}
 
@@ -1012,7 +850,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             <button
                               type="button"
                               onClick={() => void onBookingAction(bk.id, 'cancel')}
-                              className="whitespace-nowrap shrink-0 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                              className="button-xsm whitespace-nowrap shrink-0 rounded-lg border border-rose-200 bg-white px-3 py-2 text-rose-600 hover:bg-rose-50"
                             >
                               Cancel
                             </button>
@@ -1023,21 +861,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                   {/* Inline Refund Dispute Box */}
                   {disputeBookingId === bk.id && (
-                    <div className="mt-3 flex flex-col gap-2.5 border-t border-black/[0.06] pt-3 sm:flex-row sm:items-center sm:gap-3">
+                    <div className="mt-3 flex flex-col gap-2.5 rounded-lg border border-black/[0.08] bg-white p-3 sm:flex-row sm:items-center sm:gap-3">
                       <input
                         type="number"
                         min={10}
                         max={bk.totalAmountInr}
                         value={disputeAmount}
                         onChange={(e) => setDisputeAmount(Number(e.target.value))}
-                        className="w-28 rounded-lg border border-black/[0.1] bg-white px-2.5 py-1.5 font-mono text-xs text-[#111827]"
+                        className="caption-4 w-28 rounded-lg border border-black/[0.1] bg-[#F8F7F4] px-2.5 py-2 font-mono text-[#111827]"
                       />
                       <input
                         type="text"
                         value={disputeReason}
                         onChange={(e) => setDisputeReason(e.target.value)}
                         placeholder="Briefly tell us why you need a refund..."
-                        className="w-full flex-1 rounded-lg border border-black/[0.1] bg-white px-3 py-1.5 text-xs text-[#111827]"
+                        className="caption-4 w-full flex-1 rounded-lg border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-[#111827]"
                       />
                       <button
                         type="button"
@@ -1051,9 +889,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           setDisputeBookingId(null);
                           setDisputeReason('');
                         }}
-                        className="whitespace-nowrap shrink-0 rounded-lg bg-[#4338CA] px-3.5 py-1.5 text-xs font-bold text-white"
+                        className="button-xsm whitespace-nowrap shrink-0 rounded-lg bg-[#4338CA] px-3 py-2 text-white"
                       >
-                        Send Request
+                        Send request
                       </button>
                     </div>
                   )}
@@ -1065,19 +903,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </section>
 
       {/* Past Bookings & Historical Usage */}
-      <section className="rounded-2xl border border-black/[0.08] bg-white/92 p-5 sm:p-6 shadow-sm backdrop-blur-md">
+      <section className="rounded-2xl border border-black/[0.08] bg-white p-5 sm:p-6 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 font-display text-lg font-bold text-[#111827]">
-              <History className="h-5 w-5 text-[#4338CA]" />
+            <div className="title-2 flex items-center gap-2 text-[#111827]">
+              <ClockCounterClockwise className="h-5 w-5 text-[#4338CA]" weight="bold" />
               <h2>Past Bookings</h2>
             </div>
-            <p className="mt-0.5 text-xs text-[#4B5563]">
+            <p className="caption-5 mt-1 text-[#4B5563]">
               Completed visits, refunded trips, and cancelled reservations.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-1">
+          <div className="flex flex-wrap items-center gap-1 rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-1">
             {(
               [
                 { id: 'all', label: `All (${pastBookings.length})` },
@@ -1092,7 +930,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setPastFilter(tab.id)}
-                  className={`whitespace-nowrap shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  className={`button-xsm whitespace-nowrap shrink-0 rounded-lg px-3 py-2 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                     active
                       ? 'bg-white text-[#111827] shadow-sm'
                       : 'text-[#4B5563] hover:text-[#111827]'
@@ -1106,7 +944,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
 
         {filteredPastBookings.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-black/[0.12] bg-[#F8F7F4]/80 p-5 text-center text-xs text-[#4B5563]">
+          <div className="caption-4 rounded-xl border border-dashed border-black/[0.12] bg-[#F8F7F4] p-5 text-center text-[#4B5563]">
             No past bookings match this filter yet.
           </div>
         ) : (
@@ -1117,16 +955,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 ? {
                     label:
                       bk.paymentStatus === 'partially_refunded'
-                        ? 'Partially Refunded'
+                        ? 'Partially refunded'
                         : 'Refunded',
                     toneClass: 'border-teal-200 bg-teal-50 text-teal-800',
-                    Icon: RotateCcw,
+                    Icon: ArrowCounterClockwise,
                   }
                 : bk.status === 'completed'
                 ? {
                     label: 'Completed',
                     toneClass: 'border-emerald-200 bg-emerald-50 text-[#047857]',
-                    Icon: CheckCircle2,
+                    Icon: CheckCircle,
                   }
                 : {
                     label: bk.status === 'expired' ? 'Expired' : 'Cancelled',
@@ -1138,48 +976,48 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               return (
                 <div
                   key={bk.id}
-                  className="rounded-xl border border-black/[0.08] bg-[#F8F7F4]/80 p-4"
+                  className="rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-4"
                 >
                   <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
                     <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <div className="caption-4 flex flex-wrap items-center gap-2">
                         <span
-                          className={`inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 text-[11px] font-bold ${statusMeta.toneClass}`}
+                          className={`caption-3 inline-flex items-center gap-1 rounded-lg border px-2 py-0.5 ${statusMeta.toneClass}`}
                         >
-                          <StatusIcon className="h-3.5 w-3.5 shrink-0" />
+                          <StatusIcon className="h-3.5 w-3.5 shrink-0" weight="fill" />
                           <span>{statusMeta.label}</span>
                         </span>
                         <span className="text-[#374151]">
-                          {new Date(bk.createdAt).toLocaleDateString()} · {fmt12(bk.startMin)} –{' '}
+                          {new Date(bk.createdAt).toLocaleDateString()} · {fmt12(bk.startMin)} to{' '}
                           {fmt12(bk.endMin)}
                         </span>
                         {refunded && (
-                          <span className="font-mono font-bold text-teal-700">
+                          <span className="font-mono font-semibold text-teal-700">
                             · Refunded ₹{bk.refundAmountInr ?? bk.totalAmountInr}
                           </span>
                         )}
                       </div>
 
-                      <div className="font-display text-sm font-bold text-[#111827]">
+                      <div className="title-4 text-[#111827]">
                         {bk.facilityName} · Spot {bk.spaceCode}
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-[#4B5563]">
+                      <div className="caption-5 flex flex-wrap items-center gap-3 text-[#4B5563]">
                         <span>
                           {bk.vehicleLabel}
                           {bk.vehiclePlate ? ` (${bk.vehiclePlate})` : ''}
                         </span>
                         <span aria-hidden="true">·</span>
-                        <span className="font-mono text-[11px] text-[#374151]">
+                        <span className="font-mono text-[#374151]">
                           Parking ₹{bk.baseAmountInr} + Fee ₹{bk.platformFeeInr} + GST ₹{bk.gstInr} ={' '}
-                          <strong className="font-bold text-[#111827]">₹{bk.totalAmountInr}</strong>
+                          <strong className="font-semibold text-[#111827]">₹{bk.totalAmountInr}</strong>
                         </span>
                         {(bk.extraHoursChargedInr || 0) > 0 && (
                           <>
                             <span aria-hidden="true">·</span>
                             <span className="font-mono font-semibold text-amber-800">
                               + Extra hours: ₹{bk.extraHoursChargedInr}
-                              {bk.extraMinutesCharged ? ` (+${bk.extraMinutesCharged}m)` : ''} (Grand Total: ₹
+                              {bk.extraMinutesCharged ? ` (+${bk.extraMinutesCharged}m)` : ''} (Grand total: ₹
                               {bk.totalAmountInr + (bk.extraHoursChargedInr || 0)})
                             </span>
                           </>
@@ -1189,7 +1027,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             <>
                               <span aria-hidden="true">·</span>
                               <span className="font-mono font-semibold text-[#047857]">
-                                Remaining Wallet Balance: ₹{bk.remainingBalanceAfterCheckoutInr}
+                                Remaining wallet balance: ₹{bk.remainingBalanceAfterCheckoutInr}
                               </span>
                             </>
                           )}
@@ -1197,7 +1035,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           <>
                             <span aria-hidden="true">·</span>
                             <span className="font-mono font-semibold text-rose-700">
-                              Unpaid Due: ₹{bk.unpaidDueAfterCheckoutInr}
+                              Unpaid due: ₹{bk.unpaidDueAfterCheckoutInr}
                             </span>
                           </>
                         )}
@@ -1208,9 +1046,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       <button
                         type="button"
                         onClick={() => setInvoiceBookingId(bk.id)}
-                        className="flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-xs font-semibold text-[#111827] hover:bg-black/[0.03]"
+                        className="button-xsm flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-[#111827] hover:bg-black/[0.03]"
                       >
-                        <FileText className="h-3.5 w-3.5 text-[#047857]" />
+                        <FileText className="h-3.5 w-3.5 text-[#047857]" weight="bold" />
                         <span>Receipt</span>
                       </button>
 
@@ -1218,10 +1056,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <button
                           type="button"
                           onClick={() => setReviewingId(reviewingId === bk.id ? null : bk.id)}
-                          className="flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-black/[0.1] bg-white px-3 py-2 text-xs font-semibold text-[#111827] hover:border-[#D93F0B]"
+                          className="button-xsm flex items-center gap-1 whitespace-nowrap shrink-0 rounded-lg border border-black/[0.1] bg-white px-3 py-2 text-[#111827] hover:border-[#D93F0B]"
                         >
-                          <Star className="h-3.5 w-3.5 text-amber-400" />
-                          <span>Rate Stay</span>
+                          <Star className="h-3.5 w-3.5 text-amber-500" weight="fill" />
+                          <span>Rate stay</span>
                         </button>
                       )}
 
@@ -1232,20 +1070,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             setDisputeBookingId(disputeBookingId === bk.id ? null : bk.id);
                             setDisputeAmount(bk.totalAmountInr);
                           }}
-                          className="whitespace-nowrap shrink-0 rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-xs font-semibold text-[#4B5563] hover:text-[#111827]"
+                          className="button-xsm whitespace-nowrap shrink-0 rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-[#4B5563] hover:text-[#111827]"
                         >
-                          Request Refund
+                          Request refund
                         </button>
                       )}
                     </div>
                   </div>
 
                   {reviewingId === bk.id && (
-                    <div className="mt-3 flex flex-col gap-2.5 border-t border-black/[0.06] pt-3 sm:flex-row sm:items-center sm:gap-3">
+                    <div className="mt-3 flex flex-col gap-2.5 rounded-lg border border-black/[0.08] bg-white p-3 sm:flex-row sm:items-center sm:gap-3">
                       <select
                         value={rating}
                         onChange={(e) => setRating(Number(e.target.value))}
-                        className="rounded-lg border border-black/[0.1] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#111827]"
+                        className="caption-3 rounded-lg border border-black/[0.1] bg-[#F8F7F4] px-2.5 py-2 text-[#111827]"
                       >
                         {[5, 4, 3, 2, 1].map((n) => (
                           <option key={n} value={n}>
@@ -1258,7 +1096,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
                         placeholder="How was the entrance and parking experience?"
-                        className="w-full flex-1 rounded-lg border border-black/[0.1] bg-white px-3 py-1.5 text-xs text-[#111827]"
+                        className="caption-4 w-full flex-1 rounded-lg border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-[#111827]"
                       />
                       <button
                         type="button"
@@ -1267,30 +1105,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           setReviewingId(null);
                           setComment('');
                         }}
-                        className="flex items-center justify-center gap-1 rounded-lg bg-gradient-to-r from-[#E0430D] to-[#C83709] px-3 py-1.5 text-xs font-bold text-white hover:brightness-110"
+                        className="button-xsm flex items-center justify-center gap-1 rounded-lg bg-[#C83709] px-3 py-2 text-white hover:bg-[#A62B05]"
                       >
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span>Post Review</span>
+                        <CheckCircle className="h-3.5 w-3.5" weight="fill" />
+                        <span>Post review</span>
                       </button>
                     </div>
                   )}
 
                   {disputeBookingId === bk.id && (
-                    <div className="mt-3 flex flex-col gap-2.5 border-t border-black/[0.06] pt-3 sm:flex-row sm:items-center sm:gap-3">
+                    <div className="mt-3 flex flex-col gap-2.5 rounded-lg border border-black/[0.08] bg-white p-3 sm:flex-row sm:items-center sm:gap-3">
                       <input
                         type="number"
                         min={10}
                         max={bk.totalAmountInr}
                         value={disputeAmount}
                         onChange={(e) => setDisputeAmount(Number(e.target.value))}
-                        className="w-28 rounded-lg border border-black/[0.1] bg-white px-2.5 py-1.5 font-mono text-xs text-[#111827]"
+                        className="caption-4 w-28 rounded-lg border border-black/[0.1] bg-[#F8F7F4] px-2.5 py-2 font-mono text-[#111827]"
                       />
                       <input
                         type="text"
                         value={disputeReason}
                         onChange={(e) => setDisputeReason(e.target.value)}
                         placeholder="Tell us why you are requesting a refund..."
-                        className="w-full flex-1 rounded-lg border border-black/[0.1] bg-white px-3 py-1.5 text-xs text-[#111827]"
+                        className="caption-4 w-full flex-1 rounded-lg border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-[#111827]"
                       />
                       <button
                         type="button"
@@ -1304,9 +1142,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                           setDisputeBookingId(null);
                           setDisputeReason('');
                         }}
-                        className="whitespace-nowrap shrink-0 rounded-lg bg-[#4338CA] px-3.5 py-1.5 text-xs font-bold text-white"
+                        className="button-xsm whitespace-nowrap shrink-0 rounded-lg bg-[#4338CA] px-3 py-2 text-white"
                       >
-                        Send Request
+                        Send request
                       </button>
                     </div>
                   )}
@@ -1317,25 +1155,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         )}
       </section>
 
-      {/* Pop-Up Modals */}
+      {/* Pop Up Modals */}
       {navBooking && navFacility && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/55 p-3 sm:p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
-          aria-label="Live Parking Spot Directions"
+          aria-label="Parking Spot Directions"
         >
           <div className="relative my-auto w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-2xl border-2 border-[#1A73E8] bg-white p-4 sm:p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-3 border-b border-black/[0.06] pb-3">
+            <div className="flex items-start justify-between gap-3 pb-3">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 font-display text-base sm:text-lg font-bold text-[#111827]">
-                  <Navigation className="h-4 w-4 shrink-0 text-[#1A73E8]" />
-                  <span className="truncate">Parking Spot Directions · {navFacility.name}</span>
+                <div className="title-2 flex items-center gap-2 text-[#111827]">
+                  <NavigationArrow className="h-4 w-4 shrink-0 text-[#1A73E8]" weight="fill" />
+                  <span className="truncate">Parking spot directions · {navFacility.name}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-[#4B5563]">
+                <p className="caption-5 mt-1 text-[#4B5563]">
                   {navFacility.address} ({navFacility.zone}) · Spot{' '}
-                  <strong className="text-[#111827]">{navBooking.spaceCode}</strong> · Spot Access PIN{' '}
-                  <span className="font-mono font-bold text-[#4338CA]">
+                  <strong className="text-[#111827]">{navBooking.spaceCode}</strong> · Spot access PIN{' '}
+                  <span className="font-mono font-semibold text-[#4338CA]">
                     {navBooking.accessCode}
                   </span>
                 </p>
@@ -1344,13 +1182,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 type="button"
                 onClick={() => setNavBookingId(null)}
                 aria-label="Close directions"
-                className="shrink-0 rounded-lg border border-black/[0.08] p-1.5 text-[#4B5563] hover:text-[#111827]"
+                className="shrink-0 rounded-lg border border-black/[0.08] p-2 text-[#4B5563] hover:text-[#111827]"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" weight="bold" />
               </button>
             </div>
 
-            <div className="mt-3.5">
+            <div className="mt-2">
               <GoogleParkingMap
                 compact={true}
                 destinationName={locations[0]?.name || 'Central Bengaluru Hub'}
@@ -1370,24 +1208,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     : 'DRIVING'
                 }
                 directionsActive={true}
-                liveTracking={true}
+                liveTracking={false}
                 bookedSpotCode={navBooking.spaceCode}
               />
             </div>
 
-            <div className="mt-3.5 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
-              <div className="rounded-xl bg-[#F8F7F4] p-3.5">
-                <div className="font-semibold text-[#4B5563]">Place &amp; Spot Entrance</div>
-                <div className="mt-1 font-bold text-[#111827]">{navFacility.name}</div>
+            <div className="caption-4 mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-3.5">
+                <div className="caption-3 text-[#4B5563]">Place and spot entrance</div>
+                <div className="caption-3 mt-1 text-[#111827]">{navFacility.name}</div>
                 <div className="mt-0.5 text-[#374151]">{navFacility.address}</div>
-                <div className="mt-1 font-semibold text-[#C83709]">
-                  Spot Entrance: {navFacility.entranceLabel} · Spot {navBooking.spaceCode}
+                <div className="caption-3 mt-1 text-[#C83709]">
+                  Spot entrance: {navFacility.entranceLabel} · Spot {navBooking.spaceCode}
                 </div>
               </div>
-              <div className="rounded-xl bg-[#F8F7F4] p-3.5">
-                <div className="font-semibold text-[#4B5563]">Spot Entry &amp; Walk Path</div>
+              <div className="rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-3.5">
+                <div className="caption-3 text-[#4B5563]">Spot entry and walk path</div>
                 <div className="mt-1 text-[#111827]">{navFacility.accessInstructions}</div>
-                <div className="mt-1 font-semibold text-[#047857]">
+                <div className="caption-3 mt-1 text-[#047857]">
                   {navFacility.accessControl} · {navFacility.walkPathSafety}
                 </div>
               </div>
@@ -1404,13 +1242,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           aria-label="Payment Receipt"
         >
           <div className="relative my-auto w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border-2 border-[#047857] bg-white p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-3 border-b border-black/[0.06] pb-3">
+            <div className="flex items-start justify-between gap-3 pb-3">
               <div>
-                <div className="flex items-center gap-2 font-display text-base font-bold text-[#111827]">
-                  <FileText className="h-4 w-4 text-[#047857]" />
-                  <span>Payment Receipt</span>
+                <div className="title-3 flex items-center gap-2 text-[#111827]">
+                  <FileText className="h-4 w-4 text-[#047857]" weight="bold" />
+                  <span>Payment receipt</span>
                 </div>
-                <p className="mt-0.5 text-xs text-[#4B5563]">
+                <p className="caption-5 mt-0.5 text-[#4B5563]">
                   {invoiceBooking.facilityName} · Spot {invoiceBooking.spaceCode}
                   {invoiceBooking.invoiceNumber ? ` · ${invoiceBooking.invoiceNumber}` : ''}
                 </p>
@@ -1419,22 +1257,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 type="button"
                 onClick={() => setInvoiceBookingId(null)}
                 aria-label="Close receipt"
-                className="rounded-lg border border-black/[0.08] p-1.5 text-[#4B5563] hover:text-[#111827]"
+                className="rounded-lg border border-black/[0.08] p-2 text-[#4B5563] hover:text-[#111827]"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" weight="bold" />
               </button>
             </div>
-            <div className="mt-4 space-y-2 rounded-xl bg-[#F8F7F4] p-4 text-xs">
+            <div className="caption-4 mt-3 space-y-2 rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-4">
               <div className="flex justify-between">
                 <span className="text-[#4B5563]">
-                  Parking Charge ({fmt12(invoiceBooking.startMin)} – {fmt12(invoiceBooking.endMin)})
+                  Parking charge ({fmt12(invoiceBooking.startMin)} to {fmt12(invoiceBooking.endMin)})
                 </span>
                 <span className="font-mono font-semibold text-[#111827]">
                   ₹{invoiceBooking.baseAmountInr}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#4B5563]">Service &amp; Platform Fee (10%, min ₹10)</span>
+                <span className="text-[#4B5563]">Service and platform fee (10%, min ₹10)</span>
                 <span className="font-mono font-semibold text-[#111827]">
                   ₹{invoiceBooking.platformFeeInr}
                 </span>
@@ -1445,18 +1283,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   ₹{invoiceBooking.gstInr}
                 </span>
               </div>
-              <div className="flex justify-between border-t border-black/[0.08] pt-2 text-sm font-bold text-[#111827]">
+              <div className="body-4 flex justify-between rounded-lg bg-white px-3 py-2 text-[#111827]">
                 <span>
-                  Subtotal Paid (₹{invoiceBooking.baseAmountInr} + ₹{invoiceBooking.platformFeeInr} + ₹
+                  Subtotal paid (₹{invoiceBooking.baseAmountInr} + ₹{invoiceBooking.platformFeeInr} + ₹
                   {invoiceBooking.gstInr})
                 </span>
                 <span className="font-mono tabular-nums">₹{invoiceBooking.totalAmountInr}</span>
               </div>
               {(invoiceBooking.extraHoursChargedInr || 0) > 0 && (
                 <>
-                  <div className="flex justify-between text-xs font-semibold text-amber-800">
+                  <div className="caption-3 flex justify-between text-amber-800">
                     <span>
-                      Extra Hours Deducted
+                      Extra hours deducted
                       {invoiceBooking.extraMinutesCharged
                         ? ` (+${invoiceBooking.extraMinutesCharged}m)`
                         : ''}
@@ -1465,8 +1303,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       +₹{invoiceBooking.extraHoursChargedInr}
                     </span>
                   </div>
-                  <div className="flex justify-between border-t border-dashed border-black/[0.1] pt-1.5 text-sm font-bold text-[#111827]">
-                    <span>Total Deducted from Wallet</span>
+                  <div className="body-4 flex justify-between rounded-lg bg-white px-3 py-2 text-[#111827]">
+                    <span>Total deducted from wallet</span>
                     <span className="font-mono tabular-nums">
                       ₹{invoiceBooking.totalAmountInr + (invoiceBooking.extraHoursChargedInr || 0)}
                     </span>
@@ -1474,16 +1312,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </>
               )}
               {typeof invoiceBooking.remainingBalanceAfterCheckoutInr === 'number' && (
-                <div className="flex justify-between text-xs font-bold text-[#047857]">
-                  <span>Remaining Wallet Balance After Checkout</span>
+                <div className="caption-3 flex justify-between text-[#047857]">
+                  <span>Remaining wallet balance after checkout</span>
                   <span className="font-mono tabular-nums">
                     ₹{invoiceBooking.remainingBalanceAfterCheckoutInr}
                   </span>
                 </div>
               )}
               {invoiceOrder && (
-                <div className="pt-1 text-[11px] text-[#047857]">
-                  Payment Reference: {invoiceOrder.gatewayOrderRef}
+                <div className="caption-5 pt-1 text-[#047857]">
+                  Payment reference: {invoiceOrder.gatewayOrderRef}
                 </div>
               )}
             </div>

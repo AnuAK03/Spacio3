@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  CheckCircle2,
+  ArrowCounterClockwise,
+  CheckCircle,
   Compass,
   Crosshair,
   MapPin,
-  Navigation,
+  NavigationArrow,
   Pause,
   Play,
-  RotateCcw,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { BengaluruLocation, BookingRecord, Facility } from '../types/parkpool';
 
 interface LiveTrackingPanelProps {
@@ -230,21 +230,20 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
   return (
     <section
       aria-label="Live Vehicle Tracking"
-      className="rounded-2xl border border-black/[0.08] bg-white/92 p-5 shadow-sm backdrop-blur-md"
+      className="rounded-2xl border border-black/[0.08] bg-white p-6"
     >
-      {/* Top Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.06] pb-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Compass className="h-5 w-5 shrink-0 text-[#4338CA]" />
-            <h2 className="font-display text-lg font-bold text-[#111827]">
-              {isCheckedIn ? 'Live Spot Tracking' : 'Drive to Parking Location'}
+            <Compass className="h-5 w-5 shrink-0 text-[#4338CA]" weight="duotone" />
+            <h2 className="heading-6 text-[#111827]">
+              {isCheckedIn ? 'Live spot tracking' : 'Drive to parking location'}
             </h2>
           </div>
-          <p className="mt-0.5 text-xs text-[#4B5563]">
+          <p className="mt-0.5 caption-2 text-[#4B5563]">
             {isCheckedIn && activeBooking
-              ? `Checked in at ${activeBooking.facilityName} — following path into Spot ${activeBooking.spaceCode}.`
-              : `Enable live location or pick an existing starting point to track your drive to ${activeFacility.name}.`}
+              ? `Checked in at ${activeBooking.facilityName} · guiding into Spot ${activeBooking.spaceCode}.`
+              : `Enable live location or pick a starting hub to preview your drive to ${activeFacility.name}.`}
           </p>
         </div>
 
@@ -257,14 +256,14 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
                 setSelectedBookingId(e.target.value);
                 setReplayKey((k) => k + 1);
               }}
-              className="rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-1.5 text-xs font-semibold text-[#111827]"
+              className="rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 caption-4 text-[#111827]"
             >
               {trackableBookings.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.facilityName} · Spot {b.spaceCode} (
                   {b.status === 'checked-in' || b.status === 'occupied'
-                    ? 'Checked In'
-                    : 'Drive to Parking Spot'}
+                    ? 'Checked in'
+                    : 'Drive to spot'}
                   )
                 </option>
               ))}
@@ -279,7 +278,7 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
                   setFallbackFacilityId(e.target.value);
                   setReplayKey((k) => k + 1);
                 }}
-                className="rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-1.5 text-xs font-semibold text-[#111827]"
+                className="rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 caption-4 text-[#111827]"
               >
                 {verifiedFacilities.map((f) => (
                   <option key={f.id} value={f.id}>
@@ -294,10 +293,10 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
             <button
               type="button"
               onClick={() => onOpenMapDirections(activeBooking.id)}
-              className="flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl border border-indigo-200 bg-indigo-50/80 px-3 py-2 text-xs font-bold text-[#4338CA] hover:bg-indigo-100"
+              className="flex items-center gap-2 whitespace-nowrap shrink-0 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 button-xsm text-[#4338CA] transition-colors duration-300 hover:bg-indigo-100"
             >
-              <Navigation className="h-3.5 w-3.5" />
-              <span>Live Map Directions</span>
+              <NavigationArrow className="h-4 w-4" />
+              <span>Live map directions</span>
             </button>
           )}
 
@@ -306,10 +305,10 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
               type="button"
               disabled={checkingIn}
               onClick={() => void handleCheckInClick()}
-              className="flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl bg-[#047857] px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#065F46] disabled:opacity-50"
+              className="flex items-center gap-2 whitespace-nowrap shrink-0 rounded-xl bg-[#047857] px-3 py-2 button-xsm text-white transition-all duration-300 hover:bg-[#065F46] active:scale-[0.98] disabled:opacity-50"
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>{checkingIn ? 'Checking In...' : 'Arrived & Check In'}</span>
+              <CheckCircle className="h-4 w-4" weight="fill" />
+              <span>{checkingIn ? 'Checking in...' : 'Arrived and check in'}</span>
             </button>
           )}
         </div>
@@ -317,18 +316,18 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
 
       {/* Location Source Controls (Live Location vs Manual Existing Location) */}
       {!isCheckedIn && (
-        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3.5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2.5">
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={handleToggleLiveLocation}
-              className={`flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl px-3.5 py-2 text-xs font-bold transition-colors ${
+              className={`flex items-center gap-2 whitespace-nowrap shrink-0 rounded-xl px-3 py-2 button-xsm transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] ${
                 liveLocationEnabled
-                  ? 'bg-[#047857] text-white shadow-sm'
+                  ? 'bg-[#047857] text-white'
                   : 'border border-black/[0.12] bg-white text-[#111827] hover:border-[#047857]'
               }`}
             >
-              <Crosshair className="h-3.5 w-3.5" />
+              <Crosshair className="h-4 w-4" weight="bold" />
               <span>{liveLocationEnabled ? 'Live Location On' : 'Enable Live Location'}</span>
             </button>
 
@@ -336,7 +335,7 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
               <div className="flex items-center gap-2">
                 <label
                   htmlFor="manual-origin-select"
-                  className="text-xs font-semibold text-[#4B5563] whitespace-nowrap"
+                  className="caption-3 text-[#4B5563] whitespace-nowrap"
                 >
                   Start from:
                 </label>
@@ -347,7 +346,7 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
                     setManualLocationId(e.target.value);
                     setReplayKey((k) => k + 1);
                   }}
-                  className="rounded-xl border border-black/[0.1] bg-white px-3 py-1.5 text-xs font-semibold text-[#111827]"
+                  className="rounded-xl border border-black/[0.1] bg-white px-3 py-2 caption-3 text-[#111827]"
                 >
                   {locations.map((loc) => (
                     <option key={loc.id} value={loc.id}>
@@ -359,7 +358,7 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-4 caption-5">
             <div>
               <span className="text-[#4B5563]">Distance: </span>
               <strong className="font-mono tabular-nums text-[#111827]">{distText}</strong>
@@ -373,16 +372,15 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
       )}
 
       {locationError && (
-        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs text-amber-900">
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 caption-5 text-amber-900">
           {locationError}
         </div>
       )}
 
-      {/* CSS-Animated Route Canvas */}
-      <div className="mt-4 overflow-hidden rounded-2xl border border-black/[0.08] bg-[#F8F7F4] p-3 sm:p-4">
-        <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2 font-semibold text-[#111827]">
-            <Navigation className="h-3.5 w-3.5 text-[#C83709]" />
+      <div className="mt-4 overflow-hidden rounded-2xl border border-black/[0.08] bg-[#F8F7F4] p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 caption-4">
+          <div className="flex items-center gap-2 title-5 text-[#111827]">
+            <NavigationArrow className="h-4 w-4 text-[#C83709]" weight="fill" />
             <span>
               {isCheckedIn && activeBooking
                 ? `${activeFacility.entranceLabel} → Spot ${activeBooking.spaceCode}`
@@ -394,16 +392,16 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
             <button
               type="button"
               onClick={() => setIsPaused((p) => !p)}
-              className="flex items-center gap-1 rounded-lg border border-black/[0.1] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#111827] hover:bg-black/[0.03]"
+              className="flex items-center gap-1 rounded-lg border border-black/[0.1] bg-white px-3 py-1 button-xsm text-[#111827] hover:bg-black/[0.03]"
             >
               {isPaused ? (
                 <>
-                  <Play className="h-3 w-3 text-[#047857]" />
+                  <Play className="h-3.5 w-3.5 text-[#047857]" weight="fill" />
                   <span>Resume</span>
                 </>
               ) : (
                 <>
-                  <Pause className="h-3 w-3 text-[#4B5563]" />
+                  <Pause className="h-3.5 w-3.5 text-[#4B5563]" weight="fill" />
                   <span>Pause</span>
                 </>
               )}
@@ -414,9 +412,9 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
                 setIsPaused(false);
                 setReplayKey((k) => k + 1);
               }}
-              className="flex items-center gap-1 rounded-lg border border-black/[0.1] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#111827] hover:bg-black/[0.03]"
+              className="flex items-center gap-1 rounded-lg border border-black/[0.1] bg-white px-3 py-1 button-xsm text-[#111827] hover:bg-black/[0.03]"
             >
-              <RotateCcw className="h-3 w-3 text-[#4338CA]" />
+              <ArrowCounterClockwise className="h-3.5 w-3.5 text-[#4338CA]" />
               <span>Replay</span>
             </button>
           </div>
@@ -505,14 +503,13 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
               x="58"
               y="196"
               textAnchor="middle"
-              fontSize="11"
-              fontWeight="700"
+              fontSize="12"
+              fontWeight="600"
               fill="#111827"
             >
               {isCheckedIn ? 'Spot Entrance' : 'Start Point'}
             </text>
 
-            {/* Mid Checkpoint */}
             <g transform={isCheckedIn ? 'translate(285, 78)' : 'translate(345, 96)'}>
               <circle r="6" fill="#FFFFFF" stroke="#4338CA" strokeWidth="2.5" />
             </g>
@@ -520,14 +517,13 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
               x={isCheckedIn ? 285 : 345}
               y={isCheckedIn ? 58 : 76}
               textAnchor="middle"
-              fontSize="10.5"
+              fontSize="12"
               fontWeight="600"
               fill="#4338CA"
             >
               {isCheckedIn ? 'Driveway Lane' : `~${etaMinutes} min drive`}
             </text>
 
-            {/* Target Destination Node */}
             <g transform={isCheckedIn ? 'translate(568, 86)' : 'translate(568, 88)'}>
               <circle
                 r="16"
@@ -539,8 +535,8 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
               <text
                 y="4"
                 textAnchor="middle"
-                fontSize="11"
-                fontWeight="800"
+                fontSize="12"
+                fontWeight="600"
                 fill="#FFFFFF"
               >
                 P
@@ -550,14 +546,13 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
               x="568"
               y="124"
               textAnchor="middle"
-              fontSize="11"
-              fontWeight="700"
+              fontSize="12"
+              fontWeight="600"
               fill={isCheckedIn ? '#047857' : '#C83709'}
             >
               {isCheckedIn && activeBooking ? `Spot ${activeBooking.spaceCode}` : 'Parking Spot'}
             </text>
 
-            {/* CSS-Animated Moving Vehicle Marker */}
             <g
               className={`${
                 isCheckedIn ? 'live-track-vehicle-parked' : 'live-track-vehicle-enroute'
@@ -573,10 +568,8 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
                 stroke="#FFFFFF"
                 strokeWidth="2"
               />
-              {/* Headlights */}
               <circle cx="13" cy="-5" r="2" fill="#FBBF24" />
               <circle cx="13" cy="5" r="2" fill="#FBBF24" />
-              {/* Windshield / Rider indicator */}
               {isTwoWheeler ? (
                 <circle cx="2" cy="0" r="4" fill="#34D399" />
               ) : (
@@ -586,23 +579,22 @@ export const LiveTrackingPanel: React.FC<LiveTrackingPanelProps> = ({
           </svg>
         </div>
 
-        {/* Bottom Info Strip */}
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[#374151]">
-          <span className="flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 text-[#047857]" />
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 caption-4 text-[#374151]">
+          <span className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-[#047857]" weight="fill" />
             <span>
               <strong className="text-[#111827]">{activeFacility.name}</strong> ·{' '}
               {activeFacility.entranceLabel}
             </span>
           </span>
           {activeBooking ? (
-            <span className="font-mono text-[11px] font-semibold text-[#4338CA]">
+            <span className="font-mono caption-3 text-[#4338CA]">
               {activeBooking.vehiclePlate || activeBooking.vehicleLabel} · Spot Access PIN{' '}
               {activeBooking.accessCode}
             </span>
           ) : (
-            <span className="text-[11px] font-medium text-[#4B5563]">
-              Book a spot to unlock live spot tracking
+            <span className="caption-4 text-[#4B5563]">
+              Book a bay to unlock live tracking
             </span>
           )}
         </div>

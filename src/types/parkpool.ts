@@ -171,6 +171,7 @@ export interface Facility {
   availabilitySource: 'provider_portal' | 'schedule_engine' | 'pending_audit';
   lastUpdatedIso: string;
   facilityGateQrToken?: string;
+  assignedDriverEmail?: string;
 }
 
 export interface TimeBlock {
@@ -178,6 +179,7 @@ export interface TimeBlock {
   startMin: number;
   endMin: number;
   label: string;
+  date?: string;
   type: 'booking' | 'owner_block' | 'withdrawal';
 }
 
@@ -186,6 +188,7 @@ export interface AvailabilityWithdrawal {
   spaceId: string;
   startMin: number;
   endMin: number;
+  date?: string;
   reason: string;
   createdAt: string;
   affectedBookingIds: string[];

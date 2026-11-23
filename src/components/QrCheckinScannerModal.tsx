@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
-  CheckCircle2,
+  CheckCircle,
   Clock,
   Copy,
   MapPin,
   QrCode,
   ShieldCheck,
   X,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { BookingRecord, Facility } from '../types/parkpool';
 import { buildBookingQrPayload, encodeBookingQrPayload } from '../utils/qrPassGenerator';
 import { QrCodeDisplay } from './QrCodeDisplay';
@@ -59,81 +59,76 @@ export const QrCheckinScannerModal: React.FC<QrCheckinScannerModalProps> = ({
       aria-label="Entry QR Pass"
     >
       <div className="relative my-auto w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-black/[0.1] bg-white p-4 sm:p-6 shadow-2xl">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-black/[0.06] pb-3.5">
+        <div className="flex items-start justify-between gap-3 pb-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <QrCode className="h-5 w-5 shrink-0 text-[#047857]" />
-              <h2 className="truncate font-display text-base sm:text-lg font-bold text-[#111827]">
-                Your Entry QR Pass
-              </h2>
+              <QrCode className="h-5 w-5 shrink-0 text-[#047857]" weight="duotone" />
+              <h2 className="truncate heading-6 text-[#111827]">Your entry QR pass</h2>
             </div>
-            <p className="mt-0.5 text-xs text-[#4B5563]">
+            <p className="mt-0.5 caption-4 text-[#4B5563]">
               {booking.facilityName} · Spot {booking.spaceCode}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-lg border border-black/[0.08] p-1.5 text-[#4B5563] hover:text-[#111827]"
+            className="shrink-0 rounded-lg border border-black/[0.08] p-2 text-[#4B5563] transition-colors duration-300 hover:text-[#111827]"
             aria-label="Close QR pass"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="mt-4 flex flex-col items-center rounded-2xl border border-black/[0.08] bg-[#F8F7F4] p-4 sm:p-5 text-center">
+        <div className="flex flex-col items-center rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-4 sm:p-6 text-center">
           <QrCodeDisplay
             value={riderQrValue}
             size={200}
             label={`Entry QR pass for ${booking.id}`}
           />
 
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-[#111827]">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 caption-3 text-[#111827]">
             <span>Spot Access PIN:</span>
-            <span className="rounded-lg bg-white px-2.5 py-1 font-mono text-sm text-[#4338CA] border border-black/[0.08]">
+            <span className="rounded-lg bg-white px-3 py-1 font-mono body-4 text-[#4338CA] border border-black/[0.08]">
               {booking.accessCode}
             </span>
             <button
               type="button"
               onClick={() => void handleCopyPin()}
-              className="flex items-center gap-1 rounded-lg border border-black/[0.08] bg-white px-2 py-1 text-[11px] font-semibold text-[#374151] hover:border-[#4338CA]"
+              className="flex items-center gap-1 rounded-lg border border-black/[0.08] bg-white px-2 py-1 button-xsm text-[#374151] transition-colors duration-300 hover:border-[#4338CA]"
             >
-              <Copy className="h-3 w-3" />
+              <Copy className="h-3.5 w-3.5" />
               <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
           </div>
 
-          <div className="mt-2.5 flex flex-wrap items-center justify-center gap-3 text-xs text-[#374151]">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-3 caption-4 text-[#374151]">
             <span className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5 text-[#047857]" />
-              {fmt12(booking.startMin)} – {fmt12(booking.endMin)}
+              <Clock className="h-4 w-4 text-[#047857]" />
+              {fmt12(booking.startMin)} to {fmt12(booking.endMin)}
             </span>
             <span aria-hidden="true">·</span>
             <span className="flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5 text-[#C83709]" />
+              <MapPin className="h-4 w-4 text-[#C83709]" weight="fill" />
               {facility?.entranceLabel || booking.entranceLabel}
             </span>
           </div>
 
-          <div className="mt-3 w-full rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-left text-xs text-emerald-950">
-            <div className="flex items-center gap-1.5 font-bold">
+          <div className="mt-4 w-full rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-left text-emerald-950">
+            <div className="flex items-center gap-2 title-5 text-[#047857]">
               {booking.status === 'checked-in' || booking.status === 'occupied' ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#047857]" />
+                <CheckCircle className="h-4 w-4 shrink-0 text-[#047857]" weight="fill" />
               ) : (
-                <ShieldCheck className="h-4 w-4 shrink-0 text-[#047857]" />
+                <ShieldCheck className="h-4 w-4 shrink-0 text-[#047857]" weight="fill" />
               )}
               <span>
                 {booking.status === 'checked-in' || booking.status === 'occupied'
                   ? 'You are checked in'
-                  : 'Confirmed & Paid — Parking Spot Pass'}
+                  : 'Confirmed and paid parking spot pass'}
               </span>
             </div>
-            <p className="mt-1 text-xs text-emerald-900">
-              Show this live QR code to the parking attendant or entrance scanner when you arrive. Saving
-              screenshots/images is disabled for parking spot security; if no attendant is present, use Scan
-              Spot Wall QR from your active booking card.
+            <p className="mt-1 caption-4 text-emerald-900">
+              Show this live QR code to gate security or scan the wall placard from your booking
+              card upon arrival. Image saving stays disabled for spot protection.
             </p>
           </div>
 
@@ -141,7 +136,7 @@ export const QrCheckinScannerModal: React.FC<QrCheckinScannerModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-[#111827] px-6 py-2.5 text-xs font-bold text-white hover:bg-black"
+              className="rounded-xl bg-[#111827] px-3 py-2 button-sm text-white transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black active:scale-[0.98]"
             >
               Close
             </button>

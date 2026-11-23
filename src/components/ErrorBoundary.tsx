@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldWarning } from '@phosphor-icons/react';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -46,18 +46,18 @@ export class ErrorBoundary extends React.Component<
         <div className="flex min-h-screen items-center justify-center bg-[#F8F7F4] p-6 text-[#111827]">
           <div className="w-full max-w-lg rounded-2xl border border-rose-200 bg-white p-6 shadow-xl">
             <div className="flex items-center gap-3 text-rose-700">
-              <ShieldAlert className="h-6 w-6 shrink-0" />
-              <h1 className="font-display text-lg font-bold">Application Recovery Required</h1>
+              <ShieldWarning className="h-6 w-6 shrink-0" weight="duotone" />
+              <h1 className="heading-6">Application recovery required</h1>
             </div>
-            <p className="mt-3 rounded-xl bg-rose-50 p-3 font-mono text-xs text-rose-900 break-words">
+            <p className="mt-3 rounded-lg bg-rose-50 p-3 font-mono caption-4 text-rose-900 break-words">
               {friendly}
             </p>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="mt-4 rounded-xl bg-[#111827] px-4 py-2 text-xs font-bold text-white hover:bg-black"
+              className="mt-4 rounded-xl bg-[#111827] px-3 py-2 button-sm text-white transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111827]"
             >
-              Reload Application
+              Reload application
             </button>
           </div>
         </div>

@@ -1,23 +1,23 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Bike,
+  Bicycle,
+  Broadcast,
   Car,
-  CheckCircle2,
-  ChevronDown,
+  CaretDown,
+  CheckCircle,
   Clock,
   Crosshair,
-  Edit3,
+  Lightning,
+  MagnifyingGlass,
   MapPin,
+  PencilSimple,
   Plus,
-  Radio,
-  Search,
-  ShieldAlert,
   ShieldCheck,
+  ShieldWarning,
   Star,
   UserCheck,
   X,
-  Zap,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import {
   AgentStageResult,
   AgentStreamEvent,
@@ -353,7 +353,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
           : {
               id: 'LOC-GPS-BLR',
               name: 'Central Bengaluru (MG Road)',
-              area: 'Outside Bengaluru GPS — snapped to city center',
+              area: 'Outside Bengaluru GPS, snapped to city center',
               lat: 12.9716,
               lng: 77.5946,
               source: 'hub',
@@ -367,7 +367,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
         setGpsStatusMsg(
           insideBengaluru
             ? 'Showing verified parking spots nearest to your live location.'
-            : 'Your device GPS is outside Bengaluru — showing spots near Central Bengaluru.'
+            : 'Your device GPS is outside Bengaluru, showing spots near Central Bengaluru.'
         );
         setGpsLoading(false);
       },
@@ -484,7 +484,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
       endMin: appliedEndMin,
       start: fmt(appliedStartMin),
       end: fmt(appliedEndMin),
-      label: `${fmt12(appliedStartMin)} – ${fmt12(appliedEndMin)}`,
+      label: `${fmt12(appliedStartMin)} to ${fmt12(appliedEndMin)}`,
     }),
     [appliedStartMin, appliedEndMin]
   );
@@ -527,37 +527,48 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
               b.status === 'checked-in' ||
               b.status === 'occupied')
         );
-        const bkConflict = activeBks.find(
-          (b) =>
-            activeSlot.startMin < b.endMin + space.bufferMinutes &&
-            activeSlot.endMin > b.startMin - space.bufferMinutes
-        );
+        const bkConflict = activeBks[0];
         if (bkConflict) {
           rejectionReasons.push(
-            `Booked ${fmt12(bkConflict.startMin)} – ${fmt12(bkConflict.endMin)}`
+            `Booked ${fmt12(bkConflict.startMin)} to ${fmt12(bkConflict.endMin)}`
           );
         }
 
+        const todayIso = new Date().toISOString().slice(0, 10);
         const ownerConflict = space.ownerBlocks.find(
           (ob) =>
-            activeSlot.startMin < ob.endMin &&
-            activeSlot.endMin > ob.startMin - space.bufferMinutes
+            (!ob.date || ob.date === todayIso) &&
+            (ob.type === 'booking' ||
+              (activeSlot.startMin < ob.endMin &&
+                activeSlot.endMin > ob.startMin - space.bufferMinutes))
         );
         if (ownerConflict) {
-          rejectionReasons.push(`Host reserved from ${fmt12(ownerConflict.startMin)}`);
+          rejectionReasons.push(
+            ownerConflict.type === 'booking'
+              ? `Booked ${fmt12(ownerConflict.startMin)} to ${fmt12(ownerConflict.endMin)}`
+              : `Host reserved from ${fmt12(ownerConflict.startMin)}`
+          );
         }
 
+        const occState = space.occupancyState || 'AVAILABLE';
+        const clearanceActive =
+          occState === 'CLEARANCE' &&
+          (!space.clearanceEndsAt || Date.now() < Date.parse(space.clearanceEndsAt));
         const occupancyBlocked =
-          space.occupancyState === 'OVERSTAY' ||
-          space.occupancyState === 'DEPARTURE_PENDING' ||
-          space.occupancyState === 'CLEARANCE';
+          occState === 'BOOKED' ||
+          occState === 'OCCUPIED' ||
+          occState === 'OVERSTAY' ||
+          occState === 'DEPARTURE_PENDING' ||
+          clearanceActive;
         if (occupancyBlocked) {
           rejectionReasons.push(
-            space.occupancyState === 'OVERSTAY'
+            occState === 'BOOKED' || occState === 'OCCUPIED'
+              ? 'Slot allotted until checkout and turnaround buffer complete'
+              : occState === 'OVERSTAY'
               ? 'Previous vehicle still in bay (Overstay locked)'
-              : space.occupancyState === 'DEPARTURE_PENDING'
-              ? 'Driver departing — awaiting confirmation'
-              : '15-min clearance turnaround buffer active'
+              : occState === 'DEPARTURE_PENDING'
+              ? 'Driver departing, awaiting confirmation'
+              : `${space.bufferMinutes || 15} min clearance turnaround buffer active`
           );
         }
 
@@ -624,6 +635,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
 
     const filtered = raw.filter((c) => {
       if (c.verificationStatus !== 'verified') return false;
+      if (!c.eligible) return false;
       if (appliedFilterMode === 'covered' && !c.covered) return false;
       if (appliedFilterMode === 'ev' && !c.evCharging) return false;
       return true;
@@ -631,9 +643,9 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
 
     const sorted = filtered.sort((a, b) => {
       if (appliedFilterMode === 'lowest') {
-        return Number(b.eligible) - Number(a.eligible) || a.hourlyPriceInr - b.hourlyPriceInr;
+        return a.hourlyPriceInr - b.hourlyPriceInr;
       }
-      return Number(b.eligible) - Number(a.eligible) || a.walkingDistanceM - b.walkingDistanceM;
+      return a.walkingDistanceM - b.walkingDistanceM;
     });
 
     const withinCluster = sorted.filter((c) => c.walkingDistanceM <= 1800);
@@ -653,29 +665,13 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
 
   const nearbyFacilities = useMemo(() => {
     const evalFacIds = new Set(evaluatedList.map((e) => e.facilityId));
-    const matched = facilities.filter(
-      (f) => f.verificationStatus === 'verified' && evalFacIds.has(f.id)
+    return facilities.filter(
+      (f) =>
+        f.verificationStatus === 'verified' &&
+        (evalFacIds.has(f.id) ||
+          (bookedNavigationTarget && bookedNavigationTarget.facilityId === f.id))
     );
-    if (matched.length >= 5) return matched;
-    return [...facilities]
-      .filter((f) => f.verificationStatus === 'verified')
-      .sort(
-        (a, b) =>
-          calcPedestrianMeters(
-            activeLocation.lat,
-            activeLocation.lng,
-            a.entranceLat,
-            a.entranceLng
-          ) -
-          calcPedestrianMeters(
-            activeLocation.lat,
-            activeLocation.lng,
-            b.entranceLat,
-            b.entranceLng
-          )
-      )
-      .slice(0, 6);
-  }, [facilities, evaluatedList, activeLocation]);
+  }, [facilities, evaluatedList, bookedNavigationTarget]);
 
   const distinctFacilityCount = useMemo(
     () => new Set(evaluatedList.map((e) => e.facilityId)).size,
@@ -819,38 +815,38 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
     : undefined;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* FindParkingView Header with Active Vehicle Readout & Visual Vehicle Switcher */}
-      <header className="rounded-2xl border border-black/[0.08] bg-white/95 p-4 shadow-sm backdrop-blur-md sm:p-5">
+      <header className="rounded-2xl border border-black/[0.08] bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-display text-xl font-bold tracking-tight text-[#111827] sm:text-2xl">
-              Find Verified Parking
+            <h1 className="heading-5 text-[#111827]">
+              Find verified parking
             </h1>
-            <p className="mt-0.5 text-xs text-[#4B5563]">
+            <p className="body-6 mt-1 text-[#4B5563]">
               Choose your vehicle for this booking session and inspect compatible Bengaluru bays in real time.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-3">
             {vehicle && (
-              <div className="flex items-center gap-2.5 rounded-xl border border-[#D93F0B]/30 bg-[#FFF8F5] px-3.5 py-2">
+              <div className="flex items-center gap-3 rounded-xl border border-[#D93F0B]/30 bg-[#FFF8F5] px-3 py-2">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FFF0EA] text-[#C83709]">
                   {vehicle.wheelerCategory === 'two_wheeler' ? (
-                    <Bike className="h-4 w-4" />
+                    <Bicycle className="h-4 w-4" weight="bold" />
                   ) : (
-                    <Car className="h-4 w-4" />
+                    <Car className="h-4 w-4" weight="bold" />
                   )}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#4B5563]">
+                  <div className="caption-4 uppercase tracking-wider text-[#4B5563]">
                     Active Vehicle
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="truncate font-display text-xs font-bold text-[#111827]">
+                    <span className="title-5 truncate text-[#111827]">
                       {extractVehicleModel(vehicle)}
                     </span>
-                    <span className="font-mono text-xs font-bold uppercase text-[#C83709]">
+                    <span className="caption-3 font-mono uppercase text-[#C83709]">
                       {vehicle.plateNumber}
                     </span>
                   </div>
@@ -862,24 +858,24 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
               <button
                 type="button"
                 onClick={onNavigateProfile}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-xs font-bold text-[#111827] transition-colors hover:border-[#D93F0B] hover:text-[#C83709]"
+                className="button-xsm inline-flex items-center gap-1.5 rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-[#111827] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#D93F0B] hover:text-[#C83709] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D93F0B]/40"
               >
-                <Plus className="h-3.5 w-3.5" />
-                <span>{registeredVehicles.length > 0 ? 'Add Vehicle' : 'Register Vehicle'}</span>
+                <Plus className="h-3.5 w-3.5" weight="bold" />
+                <span>{registeredVehicles.length > 0 ? 'Add vehicle' : 'Register vehicle'}</span>
               </button>
             )}
           </div>
         </div>
 
         {/* Visual Registered Vehicle Switcher */}
-        <div className="mt-3.5 border-t border-black/[0.06] pt-3.5">
-          <div className="mb-2 flex items-center justify-between text-[11px] font-semibold text-[#4B5563]">
+        <div className="mt-4 rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-3">
+          <div className="caption-4 mb-2 flex items-center justify-between text-[#4B5563]">
             <span>
               {registeredVehicles.length > 0
-                ? 'Switch Registered Vehicle for Upcoming Booking'
-                : 'Select Vehicle Profile (Register your own in My Profile)'}
+                ? 'Switch registered vehicle for upcoming booking'
+                : 'Select vehicle profile (register your own in My Profile)'}
             </span>
-            <span className="tabular-nums text-[#111827]">
+            <span className="caption-3 tabular-nums text-[#111827]">
               {headerVehicleOptions.length}{' '}
               {headerVehicleOptions.length === 1 ? 'vehicle' : 'vehicles'}
             </span>
@@ -900,43 +896,44 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   role="radio"
                   aria-checked={active}
                   onClick={() => handleHeaderVehicleSwitch(v)}
-                  className={`flex items-center justify-between gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-all ${
+                  className={`flex items-center justify-between gap-2.5 rounded-lg border px-3 py-2 text-left transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D93F0B]/40 ${
                     active
                       ? 'border-[#D93F0B] bg-[#FFF0EA] ring-1 ring-[#D93F0B] shadow-sm'
-                      : 'border-black/[0.08] bg-[#F8F7F4] hover:border-[#FDBA74] hover:bg-white'
+                      : 'border-black/[0.08] bg-white hover:border-[#FDBA74]'
                   }`}
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
                     <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
                         active
-                          ? 'bg-gradient-to-br from-[#E0430D] to-[#C83709] text-white'
-                          : 'border border-black/[0.08] bg-white text-[#374151]'
+                          ? 'bg-[#C83709] text-white'
+                          : 'border border-black/[0.08] bg-[#F8F7F4] text-[#374151]'
                       }`}
                     >
                       {v.wheelerCategory === 'two_wheeler' ? (
-                        <Bike className="h-4 w-4" />
+                        <Bicycle className="h-4 w-4" weight="bold" />
                       ) : (
-                        <Car className="h-4 w-4" />
+                        <Car className="h-4 w-4" weight="bold" />
                       )}
                     </div>
                     <div className="min-w-0">
-                      <div className="truncate font-display text-xs font-bold text-[#111827]">
+                      <div className="title-5 truncate text-[#111827]">
                         {modelName}
                       </div>
-                      <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase text-[#C83709]">
+                      <div className="caption-3 mt-0.5 flex items-center gap-1.5 font-mono uppercase text-[#C83709]">
                         <span>{v.plateNumber}</span>
                         {v.isEv && (
-                          <Zap
+                          <Lightning
                             aria-label="Electric Vehicle"
                             className="h-3 w-3 shrink-0 text-[#047857]"
+                            weight="fill"
                           />
                         )}
                       </div>
                     </div>
                   </div>
                   {active && (
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-[#C83709]" />
+                    <CheckCircle className="h-4 w-4 shrink-0 text-[#C83709]" weight="fill" />
                   )}
                 </button>
               );
@@ -946,26 +943,26 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
       </header>
 
       {/* Search & Filter Panel with Personal Location Access + Inline Vehicle/License Edit + Search Button */}
-      <section className="rounded-2xl border border-black/[0.08] bg-white/92 p-3.5 shadow-sm backdrop-blur-md sm:p-4">
+      <section className="rounded-2xl border border-black/[0.08] bg-white p-4 shadow-sm sm:p-5">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12">
           {/* Destination + Personal Current Location */}
           <div className="sm:col-span-2 lg:col-span-4" ref={locationBoxRef}>
             <div className="mb-1 flex items-center justify-between gap-2">
-              <label htmlFor="find-dest" className="text-xs font-semibold text-[#4B5563]">
+              <label htmlFor="find-dest" className="caption-3 text-[#4B5563]">
                 Where are you going?
               </label>
               <button
                 type="button"
                 onClick={handleUseCurrentLocation}
                 disabled={gpsLoading}
-                className="flex items-center gap-1 text-[11px] font-bold text-[#047857] hover:underline disabled:opacity-50"
+                className="caption-3 flex items-center gap-1 text-[#047857] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#047857]/40 rounded"
               >
-                <Crosshair className="h-3 w-3" />
-                <span>{gpsLoading ? 'Detecting GPS...' : 'Use Current Location'}</span>
+                <Crosshair className="h-3.5 w-3.5" weight="bold" />
+                <span>{gpsLoading ? 'Detecting GPS...' : 'Use current location'}</span>
               </button>
             </div>
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[#C83709]" />
+              <MagnifyingGlass className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-[#C83709]" weight="bold" />
               <input
                 id="find-dest"
                 type="text"
@@ -979,7 +976,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   setLocationDropdownOpen(true);
                 }}
                 placeholder="Search Indiranagar, MG Road, Mall..."
-                className="w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] py-2 pl-9 pr-8 text-sm font-medium text-[#111827] focus:border-[#D93F0B] focus:bg-white focus:outline-none"
+                className="body-5 w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] py-2 pl-9 pr-8 text-[#111827] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus:border-[#D93F0B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D93F0B]/20"
               />
               <button
                 type="button"
@@ -988,28 +985,28 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   setLocationResults(locations);
                   setLocationDropdownOpen((o) => !o);
                 }}
-                className="absolute right-2.5 top-2.5 text-[#4B5563] hover:text-[#111827]"
+                className="absolute right-2.5 top-2.5 text-[#4B5563] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#111827]"
               >
-                <ChevronDown className="h-4 w-4" />
+                <CaretDown className="h-4 w-4" weight="bold" />
               </button>
 
               {locationDropdownOpen && (
-                <div className="absolute left-0 right-0 z-40 mt-1.5 max-h-64 overflow-y-auto rounded-xl border border-black/[0.08] bg-white p-1.5 shadow-xl">
+                <div className="absolute left-0 right-0 z-40 mt-2 max-h-64 overflow-y-auto rounded-xl border border-black/[0.08] bg-white p-2 shadow-xl">
                   <button
                     type="button"
                     onClick={handleUseCurrentLocation}
-                    className="mb-1 flex w-full items-center gap-2 rounded-lg bg-emerald-50/80 px-2.5 py-2 text-left text-xs font-bold text-[#047857] hover:bg-emerald-100"
+                    className="caption-3 mb-1 flex w-full items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-left text-[#047857] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-emerald-100"
                   >
-                    <Crosshair className="h-3.5 w-3.5 shrink-0" />
-                    <span>Use My Current Location (GPS)</span>
+                    <Crosshair className="h-3.5 w-3.5 shrink-0" weight="bold" />
+                    <span>Use my current location (GPS)</span>
                   </button>
-                  <div className="px-2.5 py-1 text-[11px] font-semibold text-[#4B5563]">
+                  <div className="caption-4 px-2.5 py-1 text-[#4B5563]">
                     {searchingLocations
                       ? 'Searching Bengaluru map...'
-                      : 'Popular Bengaluru Locations'}
+                      : 'Popular Bengaluru locations'}
                   </div>
                   {locationResults.length === 0 ? (
-                    <div className="px-3 py-2.5 text-xs text-[#4B5563]">
+                    <div className="caption-5 px-3 py-2 text-[#4B5563]">
                       No matching location found. Try another road or landmark.
                     </div>
                   ) : (
@@ -1022,14 +1019,14 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                           setLocationQuery(loc.name);
                           setLocationDropdownOpen(false);
                         }}
-                        className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors hover:bg-[#FFF0EA] ${
+                        className={`caption-4 flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#FFF0EA] ${
                           draftLocation.id === loc.id ? 'bg-[#FFF0EA]' : ''
                         }`}
                       >
-                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#C83709]" />
+                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#C83709]" weight="fill" />
                         <div className="min-w-0">
-                          <div className="truncate font-semibold text-[#111827]">{loc.name}</div>
-                          <div className="truncate text-[11px] text-[#4B5563]">{loc.area}</div>
+                          <div className="caption-3 truncate text-[#111827]">{loc.name}</div>
+                          <div className="caption-5 truncate text-[#4B5563]">{loc.area}</div>
                         </div>
                       </button>
                     ))
@@ -1041,40 +1038,40 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
 
           {/* Wheeler Category */}
           <div className="lg:col-span-4">
-            <span className="mb-1 block text-xs font-semibold text-[#4B5563]">
+            <span className="caption-3 mb-1 block text-[#4B5563]">
               Vehicle Type
             </span>
-            <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-black/[0.08] bg-[#F3F2EE] p-1">
+            <div className="grid grid-cols-2 gap-1 rounded-xl border border-black/[0.08] bg-[#F3F2EE] p-1">
               <button
                 type="button"
                 onClick={() => handleDraftWheelerSwitch('two_wheeler')}
-                className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold transition-colors ${
+                className={`button-xsm flex items-center justify-center gap-1.5 rounded-lg py-2 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] ${
                   draftWheelerCategory === 'two_wheeler'
-                    ? 'bg-gradient-to-r from-[#E0430D] to-[#C83709] text-white shadow-sm'
+                    ? 'bg-[#C83709] text-white shadow-sm'
                     : 'text-[#4B5563] hover:text-[#111827]'
                 }`}
               >
-                <Bike className="h-3.5 w-3.5" />
-                <span>2-Wheeler</span>
+                <Bicycle className="h-3.5 w-3.5" weight="bold" />
+                <span>2 Wheeler</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleDraftWheelerSwitch('four_wheeler')}
-                className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-bold transition-colors ${
+                className={`button-xsm flex items-center justify-center gap-1.5 rounded-lg py-2 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] ${
                   draftWheelerCategory === 'four_wheeler'
-                    ? 'bg-gradient-to-r from-[#E0430D] to-[#C83709] text-white shadow-sm'
+                    ? 'bg-[#C83709] text-white shadow-sm'
                     : 'text-[#4B5563] hover:text-[#111827]'
                 }`}
               >
-                <Car className="h-3.5 w-3.5" />
-                <span>4-Wheeler</span>
+                <Car className="h-3.5 w-3.5" weight="bold" />
+                <span>4 Wheeler</span>
               </button>
             </div>
           </div>
 
           {/* Vehicle Picker + Search CTA */}
           <div className="lg:col-span-4">
-            <label htmlFor="find-vehicle" className="mb-1 block text-xs font-semibold text-[#4B5563]">
+            <label htmlFor="find-vehicle" className="caption-3 mb-1 block text-[#4B5563]">
               Your Vehicle
             </label>
             <div className="flex gap-2">
@@ -1082,7 +1079,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                 id="find-vehicle"
                 value={draftVehicle.id}
                 onChange={(e) => setDraftVehicleId(e.target.value)}
-                className="min-w-0 flex-1 rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-sm font-medium text-[#111827] focus:border-[#D93F0B] focus:bg-white focus:outline-none"
+                className="body-5 min-w-0 flex-1 rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-[#111827] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus:border-[#D93F0B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D93F0B]/20"
               >
                 {filteredDraftVehicles.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -1093,9 +1090,9 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
               <button
                 type="button"
                 onClick={() => void handleApplySearch()}
-                className="flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl bg-gradient-to-r from-[#E0430D] to-[#C83709] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:brightness-110"
+                className="button-sm flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl bg-[#C83709] px-3 py-2 text-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#A62B05] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D93F0B]"
               >
-                <Search className="h-3.5 w-3.5" />
+                <MagnifyingGlass className="h-3.5 w-3.5" weight="bold" />
                 <span>Search</span>
               </button>
             </div>
@@ -1103,22 +1100,22 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
 
           {/* Parking Time Window */}
           <div className="sm:col-span-2 lg:col-span-12">
-            <div className="flex flex-col gap-2.5 rounded-xl border border-[#FED7AA]/70 bg-[#FFF8F4] p-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-[#111827]">
-                <Clock className="h-4 w-4 text-[#C83709]" />
+            <div className="flex flex-col gap-3 rounded-xl border border-[#FED7AA] bg-[#FFF8F4] p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="caption-3 flex items-center gap-2 text-[#111827]">
+                <Clock className="h-4 w-4 text-[#C83709]" weight="bold" />
                 <span>When do you need parking?</span>
               </div>
 
-              <div className="grid flex-1 grid-cols-2 gap-2.5 sm:flex sm:flex-none sm:items-center sm:gap-3">
-                <div className="flex items-center gap-1.5">
-                  <label htmlFor="find-start" className="text-xs font-medium text-[#4B5563]">
+              <div className="grid flex-1 grid-cols-2 gap-3 sm:flex sm:flex-none sm:items-center sm:gap-3">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="find-start" className="caption-4 text-[#4B5563]">
                     From
                   </label>
                   <select
                     id="find-start"
                     value={draftStartMin}
                     onChange={(e) => handleDraftStartChange(Number(e.target.value))}
-                    className="w-full rounded-lg border border-black/[0.1] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#111827] focus:border-[#D93F0B] focus:outline-none sm:w-auto"
+                    className="caption-3 w-full rounded-lg border border-black/[0.1] bg-white px-2.5 py-1.5 text-[#111827] focus:border-[#D93F0B] focus:outline-none sm:w-auto"
                   >
                     {TIME_OPTIONS.slice(0, -1).map((opt) => (
                       <option key={opt.min} value={opt.min}>
@@ -1128,15 +1125,15 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   </select>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <label htmlFor="find-end" className="text-xs font-medium text-[#4B5563]">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="find-end" className="caption-4 text-[#4B5563]">
                     Until
                   </label>
                   <select
                     id="find-end"
                     value={draftEndMin}
                     onChange={(e) => setDraftEndMin(Number(e.target.value))}
-                    className="w-full rounded-lg border border-black/[0.1] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#111827] focus:border-[#D93F0B] focus:outline-none sm:w-auto"
+                    className="caption-3 w-full rounded-lg border border-black/[0.1] bg-white px-2.5 py-1.5 text-[#111827] focus:border-[#D93F0B] focus:outline-none sm:w-auto"
                   >
                     {TIME_OPTIONS.filter((opt) => opt.min > draftStartMin).map((opt) => (
                       <option key={opt.min} value={opt.min}>
@@ -1151,14 +1148,14 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
         </div>
 
         {gpsStatusMsg && (
-          <div className="mt-2.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2 text-xs text-emerald-950">
+          <div className="caption-4 mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-950">
             {gpsStatusMsg}
           </div>
         )}
 
         {/* Filter Chips + Saved License/Vehicle Strip (with Direct Inline Edit) */}
-        <div className="mt-3 flex flex-col gap-2.5 border-t border-black/[0.06] pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-1.5">
+        <div className="mt-3 flex flex-col gap-3 rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
             {FILTER_MODES.map((m) => {
               const active = draftFilterMode === m.id;
               const activeClass =
@@ -1174,8 +1171,8 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   key={m.id}
                   type="button"
                   onClick={() => setDraftFilterMode(m.id)}
-                  className={`whitespace-nowrap shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    active ? activeClass : 'bg-[#F3F2EE] text-[#374151] hover:bg-black/[0.08]'
+                  className={`button-xsm whitespace-nowrap shrink-0 rounded-lg px-3 py-1.5 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] ${
+                    active ? activeClass : 'border border-black/[0.08] bg-white text-[#374151] hover:bg-black/[0.04]'
                   }`}
                 >
                   {m.label}
@@ -1186,27 +1183,27 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
               <button
                 type="button"
                 onClick={() => void handleApplySearch()}
-                className="whitespace-nowrap shrink-0 rounded-lg border border-[#D93F0B] bg-[#FFF0EA] px-3 py-1.5 text-xs font-bold text-[#C83709] hover:bg-[#FFE4D6]"
+                className="button-xsm whitespace-nowrap shrink-0 rounded-lg border border-[#D93F0B] bg-[#FFF0EA] px-3 py-1.5 text-[#C83709] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#FFE4D6]"
               >
-                Press Search to Apply Changes
+                Press Search to apply changes
               </button>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-3">
             {driverProfile ? (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-semibold text-[#047857]">
-                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#047857]" />
+              <div className="caption-3 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[#047857]">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#047857]" weight="fill" />
                 <span className="truncate">
-                  License: {driverProfile.licenseNumber} · Active Plate:{' '}
+                  License: {driverProfile.licenseNumber} · Plate:{' '}
                   {vehicle?.plateNumber || driverProfile.plateNumber}
                 </span>
                 <button
                   type="button"
                   onClick={() => setInlineEditOpen((o) => !o)}
-                  className="inline-flex items-center gap-1 font-bold text-[#111827] underline hover:text-[#C83709]"
+                  className="caption-3 inline-flex items-center gap-1 text-[#111827] underline hover:text-[#C83709]"
                 >
-                  <Edit3 className="h-3 w-3" />
+                  <PencilSimple className="h-3 w-3" weight="bold" />
                   <span>{inlineEditOpen ? 'Cancel' : 'Edit'}</span>
                 </button>
               </div>
@@ -1217,13 +1214,13 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   setPendingBookBay(null);
                   setEnrollmentModalOpen(true);
                 }}
-                className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 font-semibold text-amber-900 hover:border-[#D93F0B]"
+                className="caption-3 flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-amber-900 transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#D93F0B]"
               >
-                <UserCheck className="h-3.5 w-3.5 shrink-0 text-amber-700" />
-                <span>Add License &amp; Vehicle Number (Required to Book)</span>
+                <UserCheck className="h-3.5 w-3.5 shrink-0 text-amber-700" weight="bold" />
+                <span>Add license and vehicle number (required to book)</span>
               </button>
             )}
-            <span className="font-semibold text-[#047857]">
+            <span className="caption-3 text-[#047857]">
               {evaluatedList.filter((e) => e.eligible).length} spots free
             </span>
           </div>
@@ -1231,33 +1228,33 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
 
         {/* Inline Direct License & Vehicle Editor (only opens if user clicks Edit) */}
         {inlineEditOpen && (
-          <div className="mt-3 rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-3.5">
+          <div className="mt-3 rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-4">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-bold text-[#111827]">
-                Update Driving License &amp; Vehicle Details (then press Search to apply)
+              <span className="caption-3 text-[#111827]">
+                Update driving license and vehicle details, then press Search to apply
               </span>
             </div>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <input
                 type="text"
                 value={formLicense}
                 onChange={(e) => setFormLicense(e.target.value.toUpperCase())}
                 placeholder="Driving License (e.g. KA04...)"
-                className="rounded-lg border border-black/[0.1] bg-white px-3 py-1.5 font-mono text-xs uppercase text-[#111827]"
+                className="caption-4 rounded-lg border border-black/[0.1] bg-white px-3 py-2 font-mono uppercase text-[#111827]"
               />
               <input
                 type="text"
                 value={formPlateNumber}
                 onChange={(e) => setFormPlateNumber(e.target.value.toUpperCase())}
-                placeholder="Vehicle Number (KA-04-MN-8821)"
-                className="rounded-lg border border-black/[0.1] bg-white px-3 py-1.5 font-mono text-xs uppercase text-[#111827]"
+                placeholder="Vehicle Number (KA 04 MN 8821)"
+                className="caption-4 rounded-lg border border-black/[0.1] bg-white px-3 py-2 font-mono uppercase text-[#111827]"
               />
               <input
                 type="text"
                 value={formVehicleModel}
                 onChange={(e) => setFormVehicleModel(e.target.value)}
                 placeholder="Vehicle Model (e.g. Hyundai Creta)"
-                className="rounded-lg border border-black/[0.1] bg-white px-3 py-1.5 text-xs text-[#111827]"
+                className="caption-4 rounded-lg border border-black/[0.1] bg-white px-3 py-2 text-[#111827]"
               />
               <select
                 value={formWheeler}
@@ -1266,28 +1263,28 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   setFormWheeler(cat);
                   setFormVehicleType(cat === 'two_wheeler' ? 'two_wheeler' : 'hatchback');
                 }}
-                className="rounded-lg border border-black/[0.1] bg-white px-3 py-1.5 text-xs font-medium text-[#111827]"
+                className="caption-4 rounded-lg border border-black/[0.1] bg-white px-3 py-2 text-[#111827]"
               >
-                <option value="four_wheeler">4-Wheeler</option>
-                <option value="two_wheeler">2-Wheeler</option>
+                <option value="four_wheeler">4 Wheeler</option>
+                <option value="two_wheeler">2 Wheeler</option>
               </select>
               <button
                 type="button"
                 disabled={profileSaving}
                 onClick={() => void handleApplySearch()}
-                className="rounded-lg bg-[#111827] px-3 py-1.5 text-xs font-bold text-white hover:bg-black disabled:opacity-50"
+                className="button-xsm rounded-lg bg-[#111827] px-3 py-2 text-white transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black active:scale-[0.98] disabled:opacity-50"
               >
-                {profileSaving ? 'Saving...' : 'Save & Search'}
+                {profileSaving ? 'Saving...' : 'Save and search'}
               </button>
             </div>
             {profileFormError && (
-              <div className="mt-2 text-xs font-medium text-rose-700">{profileFormError}</div>
+              <div className="caption-4 mt-2 text-rose-700">{profileFormError}</div>
             )}
           </div>
         )}
       </section>
 
-      {/* Main Split: Live Google Map + Available Parking Cards */}
+      {/* Main Split: Live Map + Available Parking Cards */}
       <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-12">
         <div className="min-h-[360px] sm:min-h-[420px] lg:col-span-7 lg:min-h-[480px]">
           <BengaluruLiveMap
@@ -1324,120 +1321,117 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
           />
         </div>
 
-        <div className="flex flex-col rounded-2xl border border-black/[0.08] bg-white/92 p-4 shadow-sm backdrop-blur-md lg:col-span-5">
+        <div className="flex flex-col rounded-2xl border border-black/[0.08] bg-white p-4 shadow-sm lg:col-span-5">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="truncate font-display text-base font-bold text-[#111827]">
+            <h2 className="title-3 truncate text-[#111827]">
               Near {activeLocation.name}
             </h2>
-            <span className="shrink-0 text-xs font-bold text-[#C83709]">
+            <span className="caption-3 shrink-0 text-[#C83709]">
               {distinctFacilityCount} places · {activeSlot.label}
             </span>
           </div>
 
           <div className="flex-1 space-y-3 lg:max-h-[440px] lg:overflow-y-auto lg:pr-1">
-            {evaluatedList.map((cand) => {
-              const isSelected = cand.facilityId === selectedFacilityId;
-              return (
-                <div
-                  key={cand.spaceId}
-                  onClick={() => setSelectedFacilityId(cand.facilityId)}
-                  className={`cursor-pointer rounded-xl border p-4 transition-all hover:-translate-y-0.5 ${
-                    isSelected
-                      ? 'border-[#D93F0B] bg-[#FFF8F5] ring-1 ring-[#D93F0B]'
-                      : 'border-black/[0.08] bg-white hover:border-[#FDBA74]'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="truncate font-display text-sm font-bold text-[#111827]">
-                        {cand.facilityName}
-                      </h3>
-                      <div className="mt-0.5 text-xs text-[#4B5563]">Spot {cand.spaceCode}</div>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[#374151]">
-                        <span className="flex items-center gap-1 font-semibold text-[#111827]">
-                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                          {cand.avgRating}
-                        </span>
-                        <span aria-hidden="true">·</span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5 text-[#C83709]" />
-                          {formatDist(cand.walkingDistanceM, cand.walkingMinutes)}
-                        </span>
-                        {cand.covered && (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span className="font-medium text-[#4338CA]">Covered</span>
-                          </>
-                        )}
-                        {cand.evCharging && (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span className="flex items-center gap-0.5 font-semibold text-[#047857]">
-                              <Zap className="h-3 w-3" /> EV
-                            </span>
-                          </>
-                        )}
+            {evaluatedList.length === 0 ? (
+              <div className="rounded-xl border border-black/[0.08] bg-[#FAF9F6] p-6 text-center">
+                <div className="title-4 text-[#111827]">No open spots available here right now</div>
+                <p className="caption-4 mt-2 text-[#4B5563]">
+                  Booked spaces stay hidden until checkout and the turnaround buffer finish. Try another hub, time window, or filter.
+                </p>
+              </div>
+            ) : (
+              evaluatedList.map((cand) => {
+                const isSelected = cand.facilityId === selectedFacilityId;
+                return (
+                  <div
+                    key={cand.spaceId}
+                    onClick={() => setSelectedFacilityId(cand.facilityId)}
+                    className={`cursor-pointer rounded-xl border p-4 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 ${
+                      isSelected
+                        ? 'border-[#D93F0B] bg-[#FFF8F5] ring-1 ring-[#D93F0B]'
+                        : 'border-black/[0.08] bg-white hover:border-[#FDBA74]'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="title-4 truncate text-[#111827]">
+                          {cand.facilityName}
+                        </h3>
+                        <div className="caption-5 mt-0.5 text-[#4B5563]">Spot {cand.spaceCode}</div>
+                        <div className="caption-4 mt-2 flex flex-wrap items-center gap-2 text-[#374151]">
+                          <span className="caption-3 flex items-center gap-1 text-[#111827]">
+                            <Star className="h-3.5 w-3.5 text-amber-500" weight="fill" />
+                            {cand.avgRating}
+                          </span>
+                          <span aria-hidden="true">·</span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5 text-[#C83709]" weight="fill" />
+                            {formatDist(cand.walkingDistanceM, cand.walkingMinutes)}
+                          </span>
+                          {cand.covered && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <span className="caption-4 text-[#4338CA]">Covered</span>
+                            </>
+                          )}
+                          {cand.evCharging && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <span className="caption-3 flex items-center gap-0.5 text-[#047857]">
+                                <Lightning className="h-3 w-3" weight="fill" /> EV
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <div className="caption-5 mt-1 truncate text-[#4B5563]">
+                          {cand.entranceLabel}
+                          {cand.restrictions && cand.restrictions.length > 0
+                            ? ` · ${cand.restrictions[0]}`
+                            : ''}
+                        </div>
                       </div>
-                      <div className="mt-1 truncate text-[11px] text-[#4B5563]">
-                        {cand.entranceLabel}
-                        {cand.restrictions && cand.restrictions.length > 0
-                          ? ` · ${cand.restrictions[0]}`
-                          : ''}
+
+                      <div className="shrink-0 text-right">
+                        <div className="title-2 font-mono font-semibold tabular-nums text-[#111827]">
+                          ₹{cand.hourlyPriceInr}
+                          <span className="caption-5 font-sans text-[#4B5563]">/hr</span>
+                        </div>
+                        <div className="caption-3 font-mono text-[#111827]">
+                          Total ₹{cand.totalQuoteInr}
+                        </div>
+                        <div className="caption-5 font-mono text-[#4B5563]">
+                          ₹{cand.baseAmountInr ?? cand.hourlyPriceInr} + ₹{cand.platformFeeInr ?? 10} fee + ₹
+                          {cand.gstInr ?? 0} GST
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <div className="font-mono text-lg font-extrabold tabular-nums text-[#111827]">
-                        ₹{cand.hourlyPriceInr}
-                        <span className="text-xs font-normal text-[#4B5563]">/hr</span>
-                      </div>
-                      <div className="font-mono text-[11px] font-bold text-[#111827]">
-                        Total ₹{cand.totalQuoteInr}
-                      </div>
-                      <div className="font-mono text-[10px] text-[#4B5563]">
-                        ₹{cand.baseAmountInr ?? cand.hourlyPriceInr} + ₹{cand.platformFeeInr ?? 10} fee + ₹
-                        {cand.gstInr ?? 0} GST
-                      </div>
+                    <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-black/[0.06] bg-[#F8F7F4] p-2">
+                      <span className="caption-3 flex items-center gap-1 text-[#047857]">
+                        <CheckCircle className="h-3.5 w-3.5" weight="fill" />
+                        Available now
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBookNowClick(cand);
+                        }}
+                        className="button-xsm whitespace-nowrap shrink-0 rounded-md bg-[#C83709] px-3 py-2 text-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#A62B05] active:scale-[0.98]"
+                      >
+                        Book now
+                      </button>
                     </div>
                   </div>
-
-                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-black/[0.06] pt-3">
-                    {cand.eligible ? (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-[#047857]">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        Available Now
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-xs font-medium text-rose-600">
-                        <Clock className="h-3.5 w-3.5" />
-                        {cand.rejectionReasons[0]}
-                      </span>
-                    )}
-
-                    <button
-                      type="button"
-                      disabled={!cand.eligible}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBookNowClick(cand);
-                      }}
-                      className={`whitespace-nowrap shrink-0 rounded-lg px-4 py-1.5 text-xs font-bold transition-all ${
-                        cand.eligible
-                          ? 'bg-gradient-to-r from-[#E0430D] to-[#C83709] text-white shadow-sm hover:brightness-110'
-                          : 'cursor-not-allowed bg-[#F3F2EE] text-[#9CA3AF]'
-                      }`}
-                    >
-                      Book Now
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>
 
-      {/* Mandatory First-Time Driver Profile Pop-Up (Triggered before booking if incomplete) */}
+      {/* Mandatory First Time Driver Profile Pop Up (Triggered before booking if incomplete) */}
       {enrollmentModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-3 sm:p-4 backdrop-blur-sm"
@@ -1446,14 +1440,13 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
           aria-label="Complete Your Driver Profile"
         >
           <div className="relative my-auto w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-black/[0.1] bg-white p-5 sm:p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-3 border-b border-black/[0.06] pb-3.5">
+            <div className="flex items-start justify-between gap-3 pb-3">
               <div>
-                <h2 className="font-display text-lg font-bold text-[#111827]">
-                  Add Your License &amp; Vehicle Details
+                <h2 className="heading-6 text-[#111827]">
+                  Add your license and vehicle details
                 </h2>
-                <p className="mt-0.5 text-xs text-[#4B5563]">
-                  We save this once to your account so you do not have to enter it for future
-                  bookings.
+                <p className="caption-5 mt-1 text-[#4B5563]">
+                  We save this once to your account so you do not have to enter it for future bookings.
                 </p>
               </div>
               <button
@@ -1463,16 +1456,16 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   setPendingBookBay(null);
                 }}
                 aria-label="Close profile dialog"
-                className="rounded-lg border border-black/[0.08] p-1.5 text-[#4B5563] hover:text-[#111827]"
+                className="rounded-lg border border-black/[0.08] p-2 text-[#4B5563] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#111827]"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" weight="bold" />
               </button>
             </div>
 
-            <form onSubmit={(e) => void handleEnrollmentSubmit(e)} className="mt-4 space-y-3.5">
+            <form onSubmit={(e) => void handleEnrollmentSubmit(e)} className="mt-3 space-y-3">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#374151]">
+                  <label className="caption-3 mb-1 block text-[#374151]">
                     Full Name
                   </label>
                   <input
@@ -1480,11 +1473,11 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                     required
                     value={formFullName}
                     onChange={(e) => setFormFullName(e.target.value)}
-                    className="w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-xs text-[#111827]"
+                    className="caption-4 w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-[#111827]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#374151]">
+                  <label className="caption-3 mb-1 block text-[#374151]">
                     Mobile Number
                   </label>
                   <input
@@ -1493,14 +1486,14 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                     value={formPhone}
                     onChange={(e) => setFormPhone(e.target.value)}
                     placeholder="+91 98450 12345"
-                    className="w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-xs text-[#111827]"
+                    className="caption-4 w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-[#111827]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#374151]">
+                  <label className="caption-3 mb-1 block text-[#374151]">
                     Driving License Number
                   </label>
                   <input
@@ -1509,11 +1502,11 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                     value={formLicense}
                     onChange={(e) => setFormLicense(e.target.value.toUpperCase())}
                     placeholder="KA04 20220048192"
-                    className="w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 font-mono text-xs uppercase text-[#111827]"
+                    className="caption-4 w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 font-mono uppercase text-[#111827]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#374151]">
+                  <label className="caption-3 mb-1 block text-[#374151]">
                     License Expiry Date
                   </label>
                   <input
@@ -1521,14 +1514,14 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                     required
                     value={formLicenseValidTill}
                     onChange={(e) => setFormLicenseValidTill(e.target.value)}
-                    className="w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-xs text-[#111827]"
+                    className="caption-4 w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-[#111827]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#374151]">
+                  <label className="caption-3 mb-1 block text-[#374151]">
                     Wheeler Type
                   </label>
                   <select
@@ -1538,14 +1531,14 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                       setFormWheeler(cat);
                       setFormVehicleType(cat === 'two_wheeler' ? 'two_wheeler' : 'hatchback');
                     }}
-                    className="w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-xs text-[#111827]"
+                    className="caption-4 w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-[#111827]"
                   >
-                    <option value="four_wheeler">4-Wheeler</option>
-                    <option value="two_wheeler">2-Wheeler</option>
+                    <option value="four_wheeler">4 Wheeler</option>
+                    <option value="two_wheeler">2 Wheeler</option>
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#374151]">
+                  <label className="caption-3 mb-1 block text-[#374151]">
                     Vehicle Model
                   </label>
                   <input
@@ -1554,11 +1547,11 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                     value={formVehicleModel}
                     onChange={(e) => setFormVehicleModel(e.target.value)}
                     placeholder={formWheeler === 'two_wheeler' ? 'Ather 450X' : 'Hyundai Creta'}
-                    className="w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-xs text-[#111827]"
+                    className="caption-4 w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 text-[#111827]"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-[#374151]">
+                  <label className="caption-3 mb-1 block text-[#374151]">
                     Vehicle Number
                   </label>
                   <input
@@ -1566,14 +1559,14 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                     required
                     value={formPlateNumber}
                     onChange={(e) => setFormPlateNumber(e.target.value.toUpperCase())}
-                    placeholder="KA-04-MN-8821"
-                    className="w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 font-mono text-xs uppercase text-[#111827]"
+                    placeholder="KA 04 MN 8821"
+                    className="caption-4 w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 font-mono uppercase text-[#111827]"
                   />
                 </div>
               </div>
 
               {profileFormError && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                <div className="caption-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">
                   {profileFormError}
                 </div>
               )}
@@ -1581,20 +1574,20 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
               <button
                 type="submit"
                 disabled={profileSaving}
-                className="w-full rounded-xl bg-gradient-to-r from-[#E0430D] to-[#C83709] px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:brightness-110 disabled:opacity-50"
+                className="button-sm w-full rounded-xl bg-[#C83709] px-3 py-2 text-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#A62B05] active:scale-[0.98] disabled:opacity-50"
               >
                 {profileSaving
-                  ? 'Saving Details...'
+                  ? 'Saving details...'
                   : pendingBookBay
-                  ? 'Save & Continue to Booking'
-                  : 'Save Vehicle Details'}
+                  ? 'Save and continue to booking'
+                  : 'Save vehicle details'}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Responsive Pop-Up Booking & Instant Confirmation Modal (QR code intentionally hidden until Show QR Code is pressed in Active Bookings) */}
+      {/* Responsive Pop Up Booking & Instant Confirmation Modal */}
       {checkoutModalOpen &&
         targetBay &&
         (confirmedBooking ? (
@@ -1605,16 +1598,16 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
             aria-label="Booking Confirmed"
           >
             <section className="relative my-auto w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border-2 border-[#047857] bg-white p-5 sm:p-6 shadow-2xl">
-              <div className="flex items-start justify-between gap-3 border-b border-black/[0.06] pb-3.5">
+              <div className="flex items-start justify-between gap-3 pb-3">
                 <div className="flex items-start gap-3 min-w-0">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-[#047857]">
-                    <CheckCircle2 className="h-5 w-5" />
+                    <CheckCircle className="h-5 w-5" weight="fill" />
                   </div>
                   <div className="min-w-0">
-                    <h2 className="font-display text-lg font-bold text-[#111827]">
-                      Booking Confirmed &amp; Paid
+                    <h2 className="heading-6 text-[#111827]">
+                      Booking confirmed and paid
                     </h2>
-                    <p className="mt-0.5 text-xs text-[#4B5563]">
+                    <p className="caption-5 mt-0.5 text-[#4B5563]">
                       {confirmedBooking.facilityName} · Spot {confirmedBooking.spaceCode}
                     </p>
                   </div>
@@ -1626,67 +1619,68 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                     setConfirmedBooking(null);
                   }}
                   aria-label="Close booking confirmation"
-                  className="shrink-0 rounded-lg border border-black/[0.08] p-1.5 text-[#4B5563] hover:text-[#111827]"
+                  className="shrink-0 rounded-lg border border-black/[0.08] p-2 text-[#4B5563] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#111827]"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4" weight="bold" />
                 </button>
               </div>
 
-              <div className="mt-4 space-y-3 text-xs">
-                <div className="rounded-xl bg-[#F8F7F4] p-3.5 space-y-1.5">
-                  <div className="font-bold text-[#111827]">
+              <div className="mt-3 space-y-3">
+                <div className="caption-4 rounded-xl bg-[#F8F7F4] p-3.5 space-y-1.5">
+                  <div className="caption-3 text-[#111827]">
                     {targetFacility?.name || confirmedBooking.facilityName}
                   </div>
                   {targetFacility?.address && (
                     <div className="text-[#4B5563]">{targetFacility.address}</div>
                   )}
                   <div className="flex flex-wrap items-center gap-2 pt-1 text-[#374151]">
-                    <span className="flex items-center gap-1 font-semibold text-[#C83709]">
-                      <MapPin className="h-3.5 w-3.5" />
+                    <span className="caption-3 flex items-center gap-1 text-[#C83709]">
+                      <MapPin className="h-3.5 w-3.5" weight="fill" />
                       {targetFacility?.entranceLabel || confirmedBooking.entranceLabel}
                     </span>
                     <span>·</span>
                     <span>
-                      {fmt12(confirmedBooking.startMin)} – {fmt12(confirmedBooking.endMin)}
+                      {fmt12(confirmedBooking.startMin)} to {fmt12(confirmedBooking.endMin)}
                     </span>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-black/[0.08] bg-white p-3.5 space-y-1">
-                  <div className="font-bold text-[#111827]">Paid via Prepaid Wallet</div>
+                <div className="caption-4 rounded-xl border border-black/[0.08] bg-white p-3.5 space-y-1.5">
+                  <div className="caption-3 text-[#111827]">Paid via Prepaid Wallet</div>
                   <div className="flex justify-between text-[#4B5563]">
-                    <span>Parking Charge</span>
+                    <span>Parking charge</span>
                     <span className="font-mono">₹{confirmedBooking.baseAmountInr}</span>
                   </div>
                   <div className="flex justify-between text-[#4B5563]">
-                    <span>Service Fee</span>
+                    <span>Service fee</span>
                     <span className="font-mono">₹{confirmedBooking.platformFeeInr}</span>
                   </div>
                   <div className="flex justify-between text-[#4B5563]">
                     <span>GST (18%)</span>
                     <span className="font-mono">₹{confirmedBooking.gstInr}</span>
                   </div>
-                  <div className="flex justify-between border-t border-black/[0.08] pt-1.5 font-mono text-xs font-bold text-[#047857]">
-                    <span>Total Deducted</span>
+                  <div className="caption-3 flex justify-between rounded-lg bg-emerald-50 px-2.5 py-1.5 font-mono text-[#047857]">
+                    <span>Total deducted</span>
                     <span>₹{confirmedBooking.totalAmountInr}</span>
                   </div>
                   {wallet && (
-                    <div className="flex justify-between font-mono text-xs font-bold text-[#111827]">
-                      <span>Remaining Wallet Balance</span>
+                    <div className="caption-3 flex justify-between font-mono text-[#111827]">
+                      <span>Remaining wallet balance</span>
                       <span>₹{wallet.balanceInr}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="rounded-xl border border-indigo-200 bg-indigo-50/75 p-3.5 text-xs text-indigo-950">
-                  <div className="flex items-center gap-1.5 font-bold">
-                    <ShieldCheck className="h-4 w-4 shrink-0 text-[#4338CA]" />
-                    <span>Entry QR Stored in Active Bookings</span>
+                <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3.5 text-indigo-950">
+                  <div className="caption-3 flex items-center gap-1.5">
+                    <ShieldCheck className="h-4 w-4 shrink-0 text-[#4338CA]" weight="fill" />
+                    <span>Entry QR stored in Active Bookings</span>
                   </div>
-                  <p className="mt-1 text-[11px] leading-relaxed text-indigo-900">
+                  <p className="caption-5 mt-1 text-indigo-900">
                     For security, your Entry QR Code stays hidden until you open{' '}
                     <strong>Active Bookings &rarr; Show QR Code</strong>. If no attendant is at the
-                    parking spot, you can also scan the spot wall QR placard using <strong>Scan Spot Wall QR</strong>.
+                    parking spot, you can also scan the spot wall QR placard using{' '}
+                    <strong>Scan Spot Wall QR</strong>.
                   </p>
                 </div>
 
@@ -1705,10 +1699,10 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                       setCheckoutModalOpen(false);
                       setConfirmedBooking(null);
                     }}
-                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#1A73E8] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:brightness-110"
+                    className="button-xsm flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#1A73E8] px-3 py-2 text-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:brightness-110 active:scale-[0.98]"
                   >
-                    <MapPin className="h-3.5 w-3.5" />
-                    <span>Get Directions on Map</span>
+                    <MapPin className="h-3.5 w-3.5" weight="fill" />
+                    <span>Get directions on map</span>
                   </button>
                   <button
                     type="button"
@@ -1717,7 +1711,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                       setConfirmedBooking(null);
                       onNavigateDashboard();
                     }}
-                    className="flex-1 rounded-xl border border-black/[0.12] bg-[#F8F7F4] px-4 py-2.5 text-xs font-bold text-[#111827] hover:bg-black/[0.04]"
+                    className="button-xsm flex-1 rounded-xl border border-black/[0.12] bg-[#F8F7F4] px-3 py-2 text-[#111827] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black/[0.04] active:scale-[0.98]"
                   >
                     Go to Active Bookings
                   </button>
@@ -1733,12 +1727,12 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
             aria-label="Booking Summary"
           >
             <section className="relative my-auto w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border-2 border-[#D93F0B] bg-white p-4 sm:p-6 shadow-2xl">
-              <div className="mb-4 flex items-start justify-between gap-3 border-b border-black/[0.06] pb-3">
+              <div className="mb-4 flex items-start justify-between gap-3 pb-2">
                 <div className="min-w-0">
-                  <h3 className="font-display text-lg font-bold text-[#111827]">
-                    Confirm Your Parking · {targetBay.facilityName}
+                  <h3 className="heading-6 text-[#111827]">
+                    Confirm your parking · {targetBay.facilityName}
                   </h3>
-                  <p className="text-xs text-[#4B5563]">
+                  <p className="caption-5 mt-0.5 text-[#4B5563]">
                     Spot {targetBay.spaceCode} · {activeSlot.label} · {vehicle.label}
                   </p>
                 </div>
@@ -1747,15 +1741,15 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   type="button"
                   onClick={() => setCheckoutModalOpen(false)}
                   aria-label="Close booking dialog"
-                  className="shrink-0 rounded-lg border border-black/[0.08] p-1.5 text-[#4B5563] hover:text-[#111827]"
+                  className="shrink-0 rounded-lg border border-black/[0.08] p-2 text-[#4B5563] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#111827]"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4" weight="bold" />
                 </button>
               </div>
 
               {verifyError && (
-                <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
-                  <ShieldAlert className="h-4 w-4 shrink-0 text-rose-600" />
+                <div className="caption-4 mb-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-rose-800">
+                  <ShieldWarning className="h-4 w-4 shrink-0 text-rose-600" weight="fill" />
                   <span>{verifyError}</span>
                 </div>
               )}
@@ -1768,27 +1762,27 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                       ? 'border-emerald-200 bg-emerald-50'
                       : supervisorNote.verdict === 'FLAGGED_AND_CORRECTED'
                       ? 'border-amber-200 bg-amber-50'
-                      : 'border-indigo-200 bg-indigo-50/80'
+                      : 'border-indigo-200 bg-indigo-50'
                   }`}
                 >
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#111827]">
+                  <div className="caption-3 flex items-center gap-2 text-[#111827]">
                     {verifying ? (
-                      <Radio className="h-4 w-4 animate-spin text-[#4338CA]" />
+                      <Broadcast className="h-4 w-4 animate-spin text-[#4338CA]" weight="bold" />
                     ) : (
-                      <ShieldCheck className="h-4 w-4 text-[#047857]" />
+                      <ShieldCheck className="h-4 w-4 text-[#047857]" weight="fill" />
                     )}
                     <span>
                       {verifyError
-                        ? 'Verification Interrupted'
+                        ? 'Verification interrupted'
                         : verifying
-                        ? 'Checking Spot & Rules...'
-                        : 'Spot Verified & Available'}
+                        ? 'Checking spot and rules...'
+                        : 'Spot verified and available'}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-[#374151]">{supervisorNote.text}</p>
+                  <p className="caption-5 mt-1 text-[#374151]">{supervisorNote.text}</p>
                 </div>
 
-                <div className="grid grid-cols-5 gap-1.5">
+                <div className="grid grid-cols-5 gap-2">
                   {AGENT_STEPS.map((st) => {
                     const isActive = activeStage === st.order;
                     const done = completedStages[st.order];
@@ -1799,20 +1793,20 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                           isActive
                             ? 'border-[#D93F0B] bg-[#FFF0EA]'
                             : done
-                            ? 'border-emerald-300 bg-emerald-50/80'
+                            ? 'border-emerald-300 bg-emerald-50'
                             : 'border-black/[0.06] bg-[#F8F7F4]'
                         }`}
                       >
                         <div className="flex justify-center">
                           {done ? (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-[#047857]" />
+                            <CheckCircle className="h-3.5 w-3.5 text-[#047857]" weight="fill" />
                           ) : isActive ? (
-                            <Radio className="h-3.5 w-3.5 animate-spin text-[#C83709]" />
+                            <Broadcast className="h-3.5 w-3.5 animate-spin text-[#C83709]" weight="bold" />
                           ) : (
-                            <Clock className="h-3.5 w-3.5 text-[#9CA3AF]" />
+                            <Clock className="h-3.5 w-3.5 text-[#9CA3AF]" weight="bold" />
                           )}
                         </div>
-                        <div className="mt-1 text-[11px] font-semibold text-[#111827]">
+                        <div className="caption-4 mt-1 text-[#111827]">
                           {st.title}
                         </div>
                       </div>
@@ -1821,41 +1815,41 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                 </div>
 
                 {finalRun && (
-                  <p className="text-xs leading-relaxed text-[#374151]">
+                  <p className="caption-5 text-[#374151]">
                     {finalRun.supervisorFinalReport}
                   </p>
                 )}
               </div>
 
               {/* Clean Booking Summary */}
-              <div className="mt-4 rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-4 space-y-2 text-xs">
+              <div className="caption-4 mt-4 rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-4 space-y-2">
                 <div className="flex justify-between text-[#374151]">
-                  <span>Vehicle Number</span>
+                  <span>Vehicle number</span>
                   <span className="font-mono font-semibold text-[#111827]">
                     {vehicle.plateNumber || driverProfile?.plateNumber}
                   </span>
                 </div>
                 {driverProfile && (
                   <div className="flex justify-between text-[#374151]">
-                    <span>Driving License</span>
+                    <span>Driving license</span>
                     <span className="font-mono font-semibold text-[#047857]">
                       {driverProfile.licenseNumber}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between text-[#374151]">
-                  <span>Spot Entrance</span>
+                  <span>Spot entrance</span>
                   <span className="font-semibold text-[#111827]">{targetBay.entranceLabel}</span>
                 </div>
                 <div className="flex justify-between text-[#374151]">
-                  <span>Walking Distance</span>
+                  <span>Walking distance</span>
                   <span className="font-semibold text-[#C83709]">
                     {targetBay.walkingDistanceM}m ({targetBay.walkingMinutes} min walk)
                   </span>
                 </div>
                 {targetBay.lateArrivalSummary && (
-                  <div className="rounded-lg border border-black/[0.06] bg-white px-3 py-2 text-[11px] text-[#4B5563]">
-                    <span className="font-semibold text-[#111827]">Arrival Rule: </span>
+                  <div className="caption-5 rounded-lg border border-black/[0.06] bg-white px-3 py-2 text-[#4B5563]">
+                    <span className="font-semibold text-[#111827]">Arrival rule: </span>
                     {targetBay.lateArrivalSummary}
                   </div>
                 )}
@@ -1870,26 +1864,26 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   const gst = targetBay.gstInr ?? Math.round((base + fee) * 0.18);
                   const total = base + fee + gst;
                   return (
-                    <div className="space-y-1.5 border-t border-black/[0.08] pt-2.5">
-                      <div className="text-[11px] font-bold uppercase tracking-wide text-[#4B5563]">
+                    <div className="space-y-1.5 rounded-lg border border-black/[0.06] bg-white p-3">
+                      <div className="caption-3 uppercase tracking-wide text-[#4B5563]">
                         Price Breakdown
                       </div>
                       <div className="flex justify-between text-[#374151]">
                         <span>
-                          Parking Charge ({Number.isInteger(hours) ? hours : hours.toFixed(1)}h × ₹
+                          Parking charge ({Number.isInteger(hours) ? hours : hours.toFixed(1)}h × ₹
                           {targetBay.hourlyPriceInr}/hr)
                         </span>
                         <span className="font-mono font-semibold text-[#111827]">₹{base}</span>
                       </div>
                       <div className="flex justify-between text-[#374151]">
-                        <span>Service &amp; Platform Fee (10%, min ₹10)</span>
+                        <span>Service and platform fee (10%, min ₹10)</span>
                         <span className="font-mono font-semibold text-[#111827]">₹{fee}</span>
                       </div>
                       <div className="flex justify-between text-[#374151]">
-                        <span>GST (18% on Parking + Service Fee)</span>
+                        <span>GST (18% on parking and service fee)</span>
                         <span className="font-mono font-semibold text-[#111827]">₹{gst}</span>
                       </div>
-                      <div className="flex justify-between border-t border-dashed border-black/[0.12] pt-2 text-sm font-bold text-[#111827]">
+                      <div className="body-4 flex justify-between rounded-md bg-[#F8F7F4] px-2.5 py-1.5 text-[#111827]">
                         <span>
                           Total (₹{base} + ₹{fee} + ₹{gst})
                         </span>
@@ -1899,7 +1893,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                   );
                 })()}
                 {wallet && (
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-black/[0.08] bg-white px-3 py-2 text-xs">
+                  <div className="caption-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-black/[0.08] bg-white px-3 py-2">
                     <span className="text-[#374151]">
                       Prepaid Parking Balance:{' '}
                       <strong className="font-mono tabular-nums text-[#047857]">
@@ -1907,7 +1901,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                       </strong>
                       {wallet.unpaidDueInr > 0 && (
                         <span className="ml-2 font-semibold text-rose-700">
-                          (₹{wallet.unpaidDueInr} due — top up to book)
+                          (₹{wallet.unpaidDueInr} due, top up to book)
                         </span>
                       )}
                     </span>
@@ -1915,7 +1909,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                       <button
                         type="button"
                         onClick={() => void onTopUpWallet(500)}
-                        className="rounded-lg bg-[#047857] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#065F46]"
+                        className="button-xsm rounded-md bg-[#047857] px-3 py-1.5 text-white hover:bg-[#065F46]"
                       >
                         + Add ₹500 to Wallet
                       </button>
@@ -1925,7 +1919,7 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
               </div>
 
               {wallet?.bookingRestricted && (
-                <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-900">
+                <div className="caption-4 mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-rose-900">
                   Future bookings are paused until your ₹{wallet.unpaidDueInr} unpaid parking balance is cleared. Add funds above to unlock booking.
                 </div>
               )}
@@ -1941,14 +1935,14 @@ export const FindParkingView: React.FC<FindParkingViewProps> = ({
                     (wallet ? wallet.balanceInr < targetBay.totalQuoteInr : false)
                   }
                   onClick={() => void handleConfirmAndPay()}
-                  className="flex-1 rounded-xl bg-[#047857] px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#065F46] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="button-sm flex-1 rounded-xl bg-[#047857] px-3 py-2 text-white shadow-sm transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#065F46] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {verifying
-                    ? 'Checking Availability...'
+                    ? 'Checking availability...'
                     : confirming
                     ? 'Deducting from Prepaid Wallet...'
                     : wallet && wallet.balanceInr < targetBay.totalQuoteInr
-                    ? `Add Funds Above to Pay ₹${targetBay.totalQuoteInr} from Wallet`
+                    ? `Add funds above to pay ₹${targetBay.totalQuoteInr} from Wallet`
                     : `Pay from Prepaid Wallet · ₹${targetBay.totalQuoteInr}`}
                 </button>
               </div>

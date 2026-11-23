@@ -1,24 +1,24 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Activity,
   BookOpen,
-  Bot,
-  Building2,
+  Buildings,
   Calendar,
-  CheckCircle2,
+  CheckCircle,
   CreditCard,
-  FileCheck2,
-  IndianRupee,
-  LayoutDashboard,
-  LifeBuoy,
-  LogOut,
+  CurrencyInr,
+  FileText,
+  Lifebuoy,
+  List,
   MapPin,
-  Menu,
-  ShieldAlert,
+  Pulse,
+  Robot,
   ShieldCheck,
+  ShieldWarning,
+  SignOut,
+  SquaresFour,
   UserCheck,
   X,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { AdminPortalView, AdminSubTab } from './components/AdminPortalView';
 import { AiAssistantDrawer } from './components/AiAssistantDrawer';
 import { DashboardView } from './components/DashboardView';
@@ -103,6 +103,7 @@ export default function App() {
         setAuthToken(null);
         setUser(null);
         setUserWallet(null);
+        setSnapshot(null);
         showToast('error', 'Your session expired. Please sign in again.');
       }
       return res;
@@ -111,16 +112,53 @@ export default function App() {
   );
 
   const fetchWorkspace = useCallback(async () => {
-    const res = await fetch('/api/workspace');
+    if (!authToken || !user) return null;
+    const res = await apiFetch('/api/workspace');
     if (!res.ok) throw new Error('Failed to load ParkPool workspace');
     const data: WorkspaceSnapshot = await res.json();
     setSnapshot(data);
     return data;
-  }, []);
+  }, [authToken, user, apiFetch]);
 
   useEffect(() => {
+    if (!authToken || !user) {
+      setSnapshot(null);
+      return;
+    }
     void fetchWorkspace();
-  }, [fetchWorkspace]);
+  }, [authToken, user, activeTab, fetchWorkspace]);
+
+  useEffect(() => {
+    if (!authToken || !user || !snapshot) return;
+    const hasActiveClearance = snapshot.spaces.some((s) => s.occupancyState === 'CLEARANCE');
+    if (!hasActiveClearance) return;
+    const timer = window.setInterval(() => {
+      void fetchWorkspace();
+    }, 30000);
+    return () => window.clearInterval(timer);
+  }, [authToken, user, snapshot, fetchWorkspace]);
+
+  useEffect(() => {
+    if (!user || user.role !== 'driver' || !snapshot) return;
+    const existingProfile = snapshot.driverProfiles.find(
+      (p) => p.email.toLowerCase() === user.email.toLowerCase()
+    );
+    if (existingProfile?.registeredVehicleId) {
+      setSelectedVehicleId(existingProfile.registeredVehicleId);
+      return;
+    }
+    const ownedVehicle = snapshot.vehicles.find(
+      (v) => v.ownerEmail?.toLowerCase() === user.email.toLowerCase()
+    );
+    if (ownedVehicle) {
+      setSelectedVehicleId(ownedVehicle.id);
+    } else if (
+      snapshot.vehicles.length > 0 &&
+      !snapshot.vehicles.some((v) => v.id === selectedVehicleId)
+    ) {
+      setSelectedVehicleId(snapshot.vehicles[0].id);
+    }
+  }, [user, snapshot, selectedVehicleId]);
 
   useEffect(() => {
     if (!authToken || !user) {
@@ -144,21 +182,9 @@ export default function App() {
   }, [authToken, user, apiFetch]);
 
   const handleAuthComplete = (session: UserSession, token: string) => {
+    setSnapshot(null);
     setAuthToken(token);
     setUser(session);
-    if (session.role === 'driver' && snapshot) {
-      const existingProfile = snapshot.driverProfiles.find(
-        (p) => p.email.toLowerCase() === session.email.toLowerCase()
-      );
-      if (existingProfile?.registeredVehicleId) {
-        setSelectedVehicleId(existingProfile.registeredVehicleId);
-      } else {
-        const ownedVehicle = snapshot.vehicles.find(
-          (v) => v.ownerEmail?.toLowerCase() === session.email.toLowerCase()
-        );
-        if (ownedVehicle) setSelectedVehicleId(ownedVehicle.id);
-      }
-    }
     if (session.role === 'host') {
       setActiveTab('provider-onboarding');
     } else if (session.role === 'admin') {
@@ -172,6 +198,7 @@ export default function App() {
     setAuthToken(null);
     setUser(null);
     setUserWallet(null);
+    setSnapshot(null);
     setAssistantOpen(false);
     setMobileMenuOpen(false);
   };
@@ -189,16 +216,18 @@ export default function App() {
   // DRIVER HANDLERS
   // =========================================================================
 
-  const handleSelectLocation = useCallback(async (location: BengaluruLocation) => {
-    const res = await fetch('/api/locations/select', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ location }),
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.snapshot) setSnapshot(data.snapshot);
-  }, []);
+  const handleSelectLocation = useCallback(
+    async (location: BengaluruLocation) => {
+      const res = await apiFetch('/api/locations/select', {
+        method: 'POST',
+        body: JSON.stringify({ location }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.snapshot) setSnapshot(data.snapshot);
+    },
+    [apiFetch]
+  );
 
   const handleCreateHold = async (params: {
     spaceId: string;
@@ -250,8 +279,8 @@ export default function App() {
       showToast(
         'success',
         extraInr > 0
-          ? `Checked out! Extra hours deducted: ₹${extraInr}${extraMins ? ` (+${extraMins}m)` : ''} · Remaining wallet balance: ₹${rem}.`
-          : `Checked out! Remaining wallet balance: ₹${rem}.`
+          ? `Checked out! Extra hours deducted: ₹${extraInr}${extraMins ? ` (+${extraMins}m)` : ''} · Remaining wallet balance: ₹${rem}. Turnaround buffer started.`
+          : `Checked out! Remaining wallet balance: ₹${rem}. Bay enters turnaround buffer before reopening.`
       );
       return;
     }
@@ -613,10 +642,10 @@ export default function App() {
     showToast(
       'success',
       extraInr > 0
-        ? `Checked out! Extra hours deducted: ₹${extraInr}${extraMins ? ` (+${extraMins}m)` : ''} · Remaining wallet balance: ₹${remaining}.`
+        ? `Checked out! Extra hours deducted: ₹${extraInr}${extraMins ? ` (+${extraMins}m)` : ''} · Remaining wallet balance: ₹${remaining}. Turnaround buffer started.`
         : unpaidDue > 0
-        ? `Checked out! ₹${unpaidDue} extra-hours due recorded · Remaining wallet balance: ₹${remaining}.`
-        : `Checked out! Remaining wallet balance: ₹${remaining}.`
+        ? `Checked out! ₹${unpaidDue} extra hours due recorded · Remaining wallet balance: ₹${remaining}. Turnaround buffer started.`
+        : `Checked out! Remaining wallet balance: ₹${remaining}. Bay enters turnaround buffer before reopening.`
     );
   };
 
@@ -799,7 +828,7 @@ export default function App() {
 
   const handleAddOwnerBlock = async (
     spaceId: string,
-    payload: { startMin: number; endMin: number; label: string }
+    payload: { startMin: number; endMin: number; label: string; date?: string }
   ) => {
     const res = await apiFetch(`/api/spaces/${spaceId}/owner-blocks`, {
       method: 'POST',
@@ -823,7 +852,7 @@ export default function App() {
 
   const handleWithdrawAvailability = async (
     spaceId: string,
-    payload: { startMin: number; endMin: number; reason: string }
+    payload: { startMin: number; endMin: number; reason: string; date?: string }
   ) => {
     const res = await apiFetch(`/api/spaces/${spaceId}/withdraw`, {
       method: 'POST',
@@ -1048,26 +1077,26 @@ export default function App() {
   const navItems: Array<{
     id: AppTab;
     label: string;
-    icon: React.ComponentType<{ className?: string }>;
+    icon: React.ComponentType<{ className?: string; weight?: 'regular' | 'duotone' | 'fill' | 'bold' }>;
   }> =
     user.role === 'host'
       ? [
           { id: 'provider-onboarding', label: 'Onboarding', icon: ShieldCheck },
           { id: 'provider-facilities', label: 'Facilities & Calendar', icon: Calendar },
-          { id: 'provider-bookings', label: 'Bookings & Extensions', icon: Building2 },
-          { id: 'provider-settlements', label: 'Settlements & Incidents', icon: IndianRupee },
+          { id: 'provider-bookings', label: 'Bookings & Extensions', icon: Buildings },
+          { id: 'provider-settlements', label: 'Settlements & Incidents', icon: CurrencyInr },
         ]
       : user.role === 'admin'
       ? [
           { id: 'admin-providers', label: 'Providers & Docs', icon: ShieldCheck },
-          { id: 'admin-spaces', label: 'Space Approvals', icon: FileCheck2 },
+          { id: 'admin-spaces', label: 'Space Approvals', icon: FileText },
           { id: 'admin-payments', label: 'Payments & Refunds', icon: CreditCard },
-          { id: 'admin-ops', label: 'Ops & Analytics', icon: Activity },
+          { id: 'admin-ops', label: 'Ops & Analytics', icon: Pulse },
         ]
       : [
           { id: 'find', label: 'Find Parking', icon: MapPin },
-          { id: 'dashboard', label: 'Booking History', icon: LayoutDashboard },
-          { id: 'support', label: 'Support', icon: LifeBuoy },
+          { id: 'dashboard', label: 'Booking History', icon: SquaresFour },
+          { id: 'support', label: 'Support', icon: Lifebuoy },
           { id: 'guidelines', label: 'Guidelines', icon: BookOpen },
           { id: 'profile', label: 'My Profile', icon: UserCheck },
         ];
@@ -1108,36 +1137,44 @@ export default function App() {
     <div className="relative min-h-screen text-[#111827]">
       <LiveMobilityBackground />
 
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-[#111827] focus:px-3 focus:py-2 focus:button-sm focus:text-white"
+      >
+        Skip to content
+      </a>
+
       {gmpQuotaExceeded && (
-        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 text-xs md:text-sm text-center sticky top-0 z-50 shadow-sm">
-          <span>
-            Google Maps Platform quota reached. If you are the app owner, visit{' '}
-            <a
-              href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-semibold text-amber-950 hover:text-amber-800"
-            >
-              maps developer site
-            </a>{' '}
-            for instructions to update your account.
-          </span>
+        <div className="mx-auto mt-3 max-w-[1360px] px-4 sm:px-6">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 caption-1 text-center text-amber-900">
+            <span>
+              Google Maps Platform quota reached. Visit{' '}
+              <a
+                href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold text-amber-950 hover:text-amber-800"
+              >
+                maps developer site
+              </a>{' '}
+              for instructions to update your account.
+            </span>
+          </div>
         </div>
       )}
 
-      <header className="sticky top-0 z-30 border-b border-black/[0.07] bg-white/85 backdrop-blur-xl">
-        <div className="h-1 w-full bg-gradient-to-r from-[#FF5A1F] via-[#F59E0B] to-[#059669]" />
-        <div className="mx-auto flex h-16 max-w-[1360px] items-center justify-between gap-4 px-4 sm:px-6">
-          <div className="flex items-center gap-8">
+      <header className="sticky top-3 z-30 mx-auto max-w-[1360px] px-4 sm:px-6">
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-black/[0.08] bg-white/85 px-4 py-2 shadow-sm backdrop-blur-xl">
+          <div className="flex items-center gap-6">
             <button
               type="button"
               onClick={() => setActiveTab(roleHomeTab)}
-              className="flex items-center gap-2.5 text-left shrink-0"
+              className="flex items-center gap-2 text-left shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111827]"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#F04E18] to-[#C83709] font-display text-lg font-extrabold text-white shadow-sm">
-                P
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#111827] text-white">
+                <MapPin className="h-4 w-4 text-[#FF8A5C]" weight="fill" />
               </div>
-              <span className="font-display text-lg font-extrabold tracking-tight text-[#111827] whitespace-nowrap">
+              <span className="heading-6 text-[#111827] whitespace-nowrap">
                 ParkPool <span className="text-[#C83709]">AI</span>
               </span>
             </button>
@@ -1151,13 +1188,14 @@ export default function App() {
                     key={item.id}
                     type="button"
                     onClick={() => setActiveTab(item.id)}
-                    className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex items-center gap-2 rounded-xl px-3 py-2 button-xsm transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111827] ${
                       active
                         ? activeAccentClass
                         : 'text-[#4B5563] hover:bg-black/[0.04] hover:text-[#111827]'
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4" weight={active ? 'fill' : 'regular'} />
                     <span>{item.label}</span>
                   </button>
                 );
@@ -1170,86 +1208,124 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setAssistantOpen(true)}
-                className="flex items-center gap-1.5 whitespace-nowrap shrink-0 rounded-xl bg-gradient-to-r from-[#4338CA] to-[#3730A3] px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:brightness-110"
+                className="flex items-center gap-2 whitespace-nowrap shrink-0 rounded-xl bg-[#4338CA] px-3 py-2 button-xsm text-white transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#3730A3] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]"
               >
-                <Bot className="h-4 w-4 text-white" />
-                <span>AI Assistant</span>
+                <Robot className="h-4 w-4 text-white" weight="fill" />
+                <span>Assistant</span>
               </button>
             )}
 
-            <div className="hidden items-center gap-2.5 border-l border-black/[0.08] pl-3 sm:flex">
+            <div className="hidden items-center gap-3 sm:flex">
               <div className="text-right">
-                <div className="text-xs font-bold text-[#111827]">{user.name}</div>
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-[#047857]">
+                <div className="caption-3 text-[#111827]">{user.name}</div>
+                <div className="caption-4 uppercase tracking-wide text-[#047857]">
                   {user.role === 'host' ? 'Provider' : user.role}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleLogout}
-                title="Sign Out"
-                className="rounded-lg border border-black/[0.08] bg-white p-2 text-[#4B5563] transition-colors hover:border-rose-300 hover:text-rose-600"
+                title="Sign out"
+                aria-label="Sign out"
+                className="rounded-xl border border-black/[0.08] bg-white p-2 text-[#4B5563] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-rose-300 hover:text-rose-600 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#111827]"
               >
-                <LogOut className="h-3.5 w-3.5" />
+                <SignOut className="h-4 w-4" />
               </button>
             </div>
 
             <button
               type="button"
               onClick={() => setMobileMenuOpen((p) => !p)}
-              aria-label="Toggle menu"
-              className="rounded-lg border border-black/[0.08] bg-white p-2 text-[#111827] md:hidden"
+              aria-expanded={mobileMenuOpen}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              className="rounded-xl border border-black/[0.08] bg-white p-2 text-[#111827] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98] md:hidden"
             >
-              {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              <span
+                className={`inline-flex transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  mobileMenuOpen ? 'rotate-90' : 'rotate-0'
+                }`}
+              >
+                {mobileMenuOpen ? <X className="h-4 w-4" /> : <List className="h-4 w-4" />}
+              </span>
             </button>
           </div>
         </div>
-
-        {mobileMenuOpen && (
-          <div className="border-t border-black/[0.06] bg-white/95 px-4 py-3 md:hidden">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const active = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold ${
-                      active ? 'bg-[#111827] text-white' : 'bg-[#F3F2EE] text-[#111827]'
-                    }`}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="mt-2 flex items-center justify-between border-t border-black/[0.06] pt-2 text-xs text-[#4B5563]">
-              <span>
-                {user.name} ({user.role === 'host' ? 'Provider' : user.role})
-              </span>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="font-semibold text-[#C83709]"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        )}
       </header>
+
+      {mobileMenuOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Workspace menu"
+          className="fixed inset-0 z-50 flex flex-col justify-between bg-[#F8F7F4]/95 p-6 backdrop-blur-xl md:hidden"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#111827] text-white">
+                <MapPin className="h-4 w-4 text-[#FF8A5C]" weight="fill" />
+              </div>
+              <span className="heading-6 text-[#111827]">ParkPool AI</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close workspace menu"
+              className="rounded-xl border border-black/[0.08] bg-white p-2 text-[#111827]"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {navItems.map((item, idx) => {
+              const Icon = item.icon;
+              const active = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  style={{ transitionDelay: `${Math.min(idx * 60, 400)}ms` }}
+                  className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    active
+                      ? 'border-[#111827] bg-[#111827] text-white'
+                      : 'border-black/[0.08] bg-white text-[#111827]'
+                  }`}
+                >
+                  <Icon className="h-5 w-5 shrink-0" weight={active ? 'fill' : 'regular'} />
+                  <span className="title-2">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between rounded-2xl border border-black/[0.08] bg-white p-4">
+            <div>
+              <div className="body-4 text-[#111827]">{user.name}</div>
+              <div className="caption-4 uppercase text-[#047857]">
+                {user.role === 'host' ? 'Provider' : user.role}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#C83709] px-3 py-2 button-sm text-white"
+            >
+              <SignOut className="h-4 w-4" />
+              <span>Sign out</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div className="mx-auto mt-4 max-w-[1360px] px-4 sm:px-6">
           <div
             role="status"
-            className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-xs font-medium shadow-sm backdrop-blur-md ${
+            className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 caption-1 backdrop-blur-md ${
               toast.type === 'success'
                 ? 'border-emerald-200 bg-emerald-50/95 text-emerald-900'
                 : 'border-rose-200 bg-rose-50/95 text-rose-900'
@@ -1257,16 +1333,16 @@ export default function App() {
           >
             <div className="flex items-center gap-2">
               {toast.type === 'success' ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#047857]" />
+                <CheckCircle className="h-4 w-4 shrink-0 text-[#047857]" weight="fill" />
               ) : (
-                <ShieldAlert className="h-4 w-4 shrink-0 text-rose-600" />
+                <ShieldWarning className="h-4 w-4 shrink-0 text-rose-600" weight="fill" />
               )}
               <span>{toast.message}</span>
             </div>
             <button
               type="button"
               onClick={() => setToast(null)}
-              className="font-semibold text-[#4B5563] hover:text-[#111827]"
+              className="button-xsm text-[#4B5563] hover:text-[#111827]"
             >
               Dismiss
             </button>
@@ -1274,13 +1350,13 @@ export default function App() {
         </div>
       )}
 
-      <main className="mx-auto max-w-[1360px] p-4 sm:p-6">
+      <main id="main-content" className="mx-auto max-w-[1360px] p-4 sm:p-6">
         {!snapshot ? (
           <div className="space-y-4">
-            <div className="h-28 animate-pulse rounded-2xl bg-white/80" />
+            <div className="h-24 animate-pulse rounded-2xl border border-black/[0.08] bg-white/90" />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="h-96 animate-pulse rounded-2xl bg-white/80" />
-              <div className="h-96 animate-pulse rounded-2xl bg-white/80" />
+              <div className="h-96 animate-pulse rounded-2xl border border-black/[0.08] bg-white/90" />
+              <div className="h-96 animate-pulse rounded-2xl border border-black/[0.08] bg-white/90" />
             </div>
           </div>
         ) : (
@@ -1389,6 +1465,8 @@ export default function App() {
                 settlements={snapshot.settlements}
                 incidents={snapshot.incidents}
                 lifecycleEvents={snapshot.lifecycleEvents}
+                driverProfiles={snapshot.driverProfiles}
+                vehicles={snapshot.vehicles}
                 onRegisterProvider={handleRegisterProvider}
                 onUploadEvidence={handleUploadEvidence}
                 onAddFacility={handleAddFacility}

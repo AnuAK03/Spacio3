@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { QrCode } from 'lucide-react';
+import { QrCode } from '@phosphor-icons/react';
 
 interface QrCodeDisplayProps {
   value: string;
@@ -39,8 +39,8 @@ export const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ value, size = 176,
         style={{ width: size, height: size }}
         className="flex select-none flex-col items-center justify-center rounded-xl border border-black/[0.1] bg-[#F8F7F4] p-3 text-center"
       >
-        <QrCode className="h-8 w-8 text-[#4338CA]" />
-        <span className="mt-2 font-mono text-[11px] font-semibold text-[#374151]">{label}</span>
+        <QrCode className="h-8 w-8 text-[#4338CA]" weight="duotone" />
+        <span className="mt-2 font-mono caption-4 text-[#374151]">{label}</span>
       </div>
     );
   }
@@ -50,7 +50,7 @@ export const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ value, size = 176,
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
       className="inline-block select-none"
-      title="Entry QR pass (view-only — image download disabled)"
+      title="Entry QR pass (view only, image download disabled)"
     >
       <img
         src={dataUrl}
@@ -60,7 +60,7 @@ export const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ value, size = 176,
         draggable={false}
         onContextMenu={(e) => e.preventDefault()}
         referrerPolicy="no-referrer"
-        className="pointer-events-none select-none rounded-xl border border-black/[0.08] bg-white p-1.5 shadow-sm"
+        className="pointer-events-none select-none rounded-xl border border-black/[0.08] bg-white p-2 shadow-sm"
       />
     </div>
   );
