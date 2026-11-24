@@ -458,7 +458,7 @@ Return a JSON object with EXACTLY these keys:
   }
 
   const s2Start = Date.now();
-  const allFacilities = store.facilities;
+  const allFacilities = store.facilities.filter((f) => !store.isHostSandboxFacility(f.id));
   const rawDiscoveredFacilities = faultInjectionEnabled
     ? allFacilities
     : allFacilities.filter((f) => f.verificationStatus === 'verified');
@@ -1075,6 +1075,9 @@ export async function askDriverGenAiAgent(
     store.expireStaleHolds();
     store.syncOccupancyStates();
     const approvedSpaces = store.spaces.filter((s) => {
+      if (store.isHostSandboxFacility(s.facilityId)) {
+        return false;
+      }
       if (s.publicationStatus !== 'approved' || s.occupancyState !== 'AVAILABLE') {
         return false;
       }

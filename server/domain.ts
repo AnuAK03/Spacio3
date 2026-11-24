@@ -1,5 +1,8 @@
 import {
   AdminAnalytics,
+  AdminBookingTrendPoint,
+  AdminRecentActivityItem,
+  AdminZoneOverviewItem,
   AutonomousLifecycleEvent,
   AutonomousLifecycleStep,
   AvailabilityWithdrawal,
@@ -42,6 +45,7 @@ import {
   WheelerCategory,
   WorkspaceSnapshot,
 } from '../src/types/parkpool';
+import { getAuthDirectorySummary } from './auth';
 import {
   signBookingQrToken,
   signFacilityGateQrToken,
@@ -210,6 +214,10 @@ class ParkPoolStore {
   // Idempotent webhook event deduplication registry
   private processedWebhookEventIds = new Set<string>();
   private bookingLock = false;
+  private hostSandboxFacilityIds = new Set<string>();
+  private hostSandboxBookingIds = new Set<string>();
+  private hostSandboxSettlementIds = new Set<string>();
+  private seededPortfolioProviderIds = new Set<string>();
 
   public providers: ProviderRecord[] = [
     {
@@ -567,6 +575,38 @@ class ParkPoolStore {
       registeredVehicleId: 'VEH-SUV-01',
       verified: true,
       updatedAt: '2026-11-20T04:00:00Z',
+    },
+    {
+      id: 'DRV-02',
+      fullName: 'Priya Nair',
+      email: 'priya.nair@bengaluru.in',
+      phone: '+91 98455 31208',
+      licenseNumber: 'KA01 20200019441',
+      licenseValidTill: '2031-05-20',
+      wheelerCategory: 'four_wheeler',
+      vehicleType: 'hatchback',
+      vehicleModel: 'Tata Tiago EV (Hatchback)',
+      plateNumber: 'KA-01-XY-2045',
+      isEv: true,
+      registeredVehicleId: 'VEH-HATCH-03',
+      verified: true,
+      updatedAt: '2026-11-19T09:15:00Z',
+    },
+    {
+      id: 'DRV-03',
+      fullName: 'Karthik Menon',
+      email: 'karthik.menon@bengaluru.in',
+      phone: '+91 99001 44510',
+      licenseNumber: 'KA03 20190081233',
+      licenseValidTill: '2030-11-10',
+      wheelerCategory: 'four_wheeler',
+      vehicleType: 'sedan',
+      vehicleModel: 'Honda City e:HEV (Sedan)',
+      plateNumber: 'KA-03-AB-4190',
+      isEv: false,
+      registeredVehicleId: 'VEH-SEDAN-02',
+      verified: true,
+      updatedAt: '2026-11-18T11:30:00Z',
     },
   ];
 
@@ -2274,24 +2314,39 @@ class ParkPoolStore {
     return expiredCount;
   }
 
+  public isHostSandboxFacility(facilityId: string): boolean {
+    return this.hostSandboxFacilityIds.has(facilityId);
+  }
+
   public computeAdminAnalytics(): AdminAnalytics {
+    const authSummary = getAuthDirectorySummary();
+    const realFacilities = this.facilities.filter((f) => !this.hostSandboxFacilityIds.has(f.id));
+    const realFacIds = new Set(realFacilities.map((f) => f.id));
+    const realSpaces = this.spaces.filter((s) => realFacIds.has(s.facilityId));
+    const realBookings = this.bookings.filter((b) => !this.hostSandboxBookingIds.has(b.id));
+    const realSettlements = this.settlements.filter((s) => !this.hostSandboxSettlementIds.has(s.id));
+
     const paidOrders = this.paymentOrders.filter((o) => o.status === 'paid');
     const totalGmvInr = paidOrders.reduce((s, o) => s + o.amountInr, 0);
     const platformRevenueInr = paidOrders.reduce((s, o) => s + o.platformFeeInr, 0);
+    const taxCollectedInr = paidOrders.reduce((s, o) => s + o.gstInr, 0);
     const totalRefundedInr = this.refunds
       .filter((r) => r.status === 'processed' || r.status === 'approved')
       .reduce((s, r) => s + r.amountInr, 0);
-    const totalSettledHostInr = this.settlements
+    const totalSettledHostInr = realSettlements
       .filter((st) => st.status === 'settled')
+      .reduce((s, st) => s + st.netPayoutInr, 0);
+    const pendingHostPayoutInr = realSettlements
+      .filter((st) => st.status === 'scheduled' || st.status === 'pending_checkout')
       .reduce((s, st) => s + st.netPayoutInr, 0);
 
     const approvedProviders = this.providers.filter((p) => p.verificationStatus === 'APPROVED').length;
     const pendingProviders = this.providers.filter((p) =>
       ['NOT_SUBMITTED', 'SUBMITTED', 'UNDER_REVIEW', 'NEEDS_MORE_INFORMATION'].includes(p.verificationStatus)
     ).length;
-    const approvedSpaces = this.spaces.filter((s) => s.publicationStatus === 'approved').length;
-    const pendingSpaces = this.spaces.filter((s) => s.publicationStatus !== 'approved').length;
-    const activeBookings = this.bookings.filter((b) =>
+    const approvedSpaces = realSpaces.filter((s) => s.publicationStatus === 'approved').length;
+    const pendingSpaces = realSpaces.filter((s) => s.publicationStatus !== 'approved').length;
+    const activeBookings = realBookings.filter((b) =>
       ['held', 'confirmed', 'checked-in', 'occupied'].includes(b.status)
     ).length;
     const duplicateWebhooksBlocked = this.webhookEvents.reduce(
@@ -2299,6 +2354,9 @@ class ParkPoolStore {
       0
     );
     const openIncidents = this.incidents.filter((i) => i.status !== 'resolved').length;
+    const criticalIncidentsCount = this.incidents.filter(
+      (i) => i.status !== 'resolved' && (i.severity === 'high' || i.severity === 'medium')
+    ).length;
     const openDisputes = this.disputes.filter(
       (d) => d.status === 'open' || d.status === 'under_review'
     ).length;
@@ -2307,6 +2365,216 @@ class ParkPoolStore {
         p.verificationStatus === 'EXPIRED' ||
         (p.expiresAt && Date.parse(p.expiresAt) < Date.now() + 30 * 86400 * 1000)
     ).length;
+
+    const driverEmailSet = new Set<string>(authSummary.driverEmails);
+    for (const dp of this.driverProfiles) {
+      if (dp.email) driverEmailSet.add(dp.email.toLowerCase());
+    }
+    for (const w of this.wallets) {
+      if (w.driverEmail) driverEmailSet.add(w.driverEmail.toLowerCase());
+    }
+    for (const bk of realBookings) {
+      if (bk.driverEmail) driverEmailSet.add(bk.driverEmail.toLowerCase());
+    }
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayBookings = realBookings.filter((b) => b.createdAt.slice(0, 10) === todayIso).length;
+    const completedBookings = realBookings.filter((b) => b.status === 'completed').length;
+    const cancelledBookings = realBookings.filter((b) => b.status === 'cancelled').length;
+    const expiredBookings = realBookings.filter((b) => b.status === 'expired').length;
+    const pendingBookings = realBookings.filter((b) => b.status === 'held').length;
+    const averageBookingValueInr =
+      paidOrders.length > 0 ? Math.round(totalGmvInr / paidOrders.length) : 0;
+
+    const missingOrExpiredDocsCount = this.providers.filter(
+      (p) =>
+        p.verificationStatus === 'EXPIRED' ||
+        p.documents.length === 0 ||
+        p.documents.some(
+          (d) =>
+            d.status === 'rejected' ||
+            (Array.isArray(d.aiMissingFieldFlags) && d.aiMissingFieldFlags.length > 0)
+        ) ||
+        p.aiPrecheckWarnings.length > 0
+    ).length;
+
+    const pendingRefundsCount =
+      this.refunds.filter((r) => r.status === 'requested' || r.status === 'approved').length +
+      realBookings.filter((b) => b.refundStatus === 'requested' || b.refundStatus === 'processing').length;
+
+    const dailyBookingTrends: AdminBookingTrendPoint[] = [];
+    for (let offset = 6; offset >= 0; offset--) {
+      const dt = new Date(Date.now() - offset * 86400 * 1000);
+      const dayKey = dt.toISOString().slice(0, 10);
+      const dayLabel = dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+      const dayBookings = realBookings.filter((b) => b.createdAt.slice(0, 10) === dayKey);
+      const dayPaid = paidOrders.filter((o) => (o.paidAt || o.createdAt).slice(0, 10) === dayKey);
+      dailyBookingTrends.push({
+        key: dayKey,
+        label: dayLabel,
+        bookings: dayBookings.length,
+        revenueInr: dayPaid.reduce((sum, o) => sum + o.amountInr, 0),
+      });
+    }
+
+    const monthlyBookingTrends: AdminBookingTrendPoint[] = [];
+    const nowDate = new Date();
+    for (let mOffset = 5; mOffset >= 0; mOffset--) {
+      const dt = new Date(nowDate.getFullYear(), nowDate.getMonth() - mOffset, 1);
+      const monthKey = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+      const monthLabel = dt.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+      const mBookings = realBookings.filter((b) => b.createdAt.slice(0, 7) === monthKey);
+      const mPaid = paidOrders.filter((o) => (o.paidAt || o.createdAt).slice(0, 7) === monthKey);
+      monthlyBookingTrends.push({
+        key: monthKey,
+        label: monthLabel,
+        bookings: mBookings.length,
+        revenueInr: mPaid.reduce((sum, o) => sum + o.amountInr, 0),
+      });
+    }
+
+    const activeSpacesList = realSpaces.filter((s) => s.publicationStatus === 'approved');
+    const availableSpaces = activeSpacesList.filter(
+      (s) => !s.occupancyState || s.occupancyState === 'AVAILABLE'
+    ).length;
+    const occupiedSpaces = realSpaces.filter((s) =>
+      ['BOOKED', 'OCCUPIED', 'OVERSTAY', 'DEPARTURE_PENDING'].includes(s.occupancyState || '')
+    ).length;
+    const clearanceOrBlockedSpaces = realSpaces.filter(
+      (s) => s.occupancyState === 'CLEARANCE'
+    ).length;
+
+    const zoneMap = new Map<
+      string,
+      {
+        facilities: Facility[];
+        spaces: ParkingSpace[];
+      }
+    >();
+    for (const fac of realFacilities) {
+      const z = fac.zone || 'Bengaluru Hub';
+      if (!zoneMap.has(z)) {
+        zoneMap.set(z, { facilities: [], spaces: [] });
+      }
+      zoneMap.get(z)!.facilities.push(fac);
+    }
+    for (const sp of realSpaces) {
+      const fac = realFacilities.find((f) => f.id === sp.facilityId);
+      const z = fac?.zone || 'Bengaluru Hub';
+      if (!zoneMap.has(z)) {
+        zoneMap.set(z, { facilities: [], spaces: [] });
+      }
+      zoneMap.get(z)!.spaces.push(sp);
+    }
+
+    const byZone: AdminZoneOverviewItem[] = Array.from(zoneMap.entries())
+      .map(([zone, data]) => {
+        const zActive = data.spaces.filter((s) => s.publicationStatus === 'approved').length;
+        const zAvailable = data.spaces.filter(
+          (s) => s.publicationStatus === 'approved' && (!s.occupancyState || s.occupancyState === 'AVAILABLE')
+        ).length;
+        const zOccupied = data.spaces.filter((s) =>
+          ['BOOKED', 'OCCUPIED', 'OVERSTAY', 'DEPARTURE_PENDING'].includes(s.occupancyState || '')
+        ).length;
+        const facCount = data.facilities.length || 1;
+        const avgLat = Number(
+          (data.facilities.reduce((sum, f) => sum + f.lat, 0) / facCount).toFixed(4)
+        );
+        const avgLng = Number(
+          (data.facilities.reduce((sum, f) => sum + f.lng, 0) / facCount).toFixed(4)
+        );
+        return {
+          zone,
+          facilityCount: data.facilities.length,
+          totalSpaces: data.spaces.length,
+          activeSpaces: zActive,
+          inactiveSpaces: data.spaces.length - zActive,
+          availableSpaces: zAvailable,
+          occupiedSpaces: zOccupied,
+          avgLat,
+          avgLng,
+        };
+      })
+      .sort((a, b) => b.totalSpaces - a.totalSpaces);
+
+    const activityItems: AdminRecentActivityItem[] = [];
+    for (const reg of authSummary.recentRegistrations) {
+      activityItems.push({
+        id: `ACT-USR-${reg.uid}`,
+        timestamp: reg.createdAt,
+        category: reg.role === 'host' ? 'provider_registration' : 'user_registration',
+        title:
+          reg.role === 'host'
+            ? `Provider account created: ${reg.displayName}`
+            : `Driver registered: ${reg.displayName}`,
+        detail: `${reg.email} (${reg.organization})`,
+        targetTab: reg.role === 'host' ? 'providers' : 'ops',
+      });
+    }
+    for (const prv of this.providers) {
+      activityItems.push({
+        id: `ACT-PRV-${prv.id}`,
+        timestamp: prv.submittedAt || prv.updatedAt,
+        category: 'provider_registration',
+        title: `Provider ${prv.organizationName}`,
+        detail: `Status: ${prv.verificationStatus.replace(/_/g, ' ').toLowerCase()}`,
+        targetTab: 'providers',
+      });
+    }
+    for (const fac of realFacilities.slice(0, 15)) {
+      activityItems.push({
+        id: `ACT-FAC-${fac.id}`,
+        timestamp: fac.lastUpdatedIso,
+        category: 'space_submission',
+        title: `Parking facility: ${fac.name}`,
+        detail: `${fac.zone} (${fac.verificationStatus})`,
+        targetTab: 'spaces',
+      });
+    }
+    for (const bk of realBookings.slice(0, 12)) {
+      activityItems.push({
+        id: `ACT-BK-${bk.id}`,
+        timestamp: bk.checkedOutAt || bk.checkedInAt || bk.createdAt,
+        category: 'booking_update',
+        title: `Booking ${bk.id} is ${bk.status}`,
+        detail: `${bk.driverName} at ${bk.facilityName}`,
+        targetTab: 'ops',
+      });
+    }
+    for (const ord of this.paymentOrders.slice(0, 8)) {
+      activityItems.push({
+        id: `ACT-ORD-${ord.id}`,
+        timestamp: ord.paidAt || ord.createdAt,
+        category: 'payment_refund',
+        title: `Payment ${ord.id} ${ord.status}`,
+        detail: `Rs ${ord.amountInr} for booking ${ord.bookingId}`,
+        targetTab: 'payments',
+      });
+    }
+    for (const ref of this.refunds.slice(0, 6)) {
+      activityItems.push({
+        id: `ACT-REF-${ref.id}`,
+        timestamp: ref.processedAt || ref.createdAt,
+        category: 'payment_refund',
+        title: `Refund ${ref.id} ${ref.status}`,
+        detail: `Rs ${ref.amountInr} for booking ${ref.bookingId}`,
+        targetTab: 'payments',
+      });
+    }
+    for (const aud of this.auditLogs.slice(0, 10)) {
+      activityItems.push({
+        id: `ACT-AUD-${aud.id}`,
+        timestamp: aud.timestamp,
+        category: 'admin_action',
+        title: `${aud.actor}: ${aud.action.replace(/_/g, ' ').toLowerCase()}`,
+        detail: aud.detail,
+        targetTab: 'ops',
+      });
+    }
+
+    const recentActivity = activityItems
+      .sort((a, b) => Date.parse(b.timestamp || '1970-01-01') - Date.parse(a.timestamp || '1970-01-01'))
+      .slice(0, 16);
 
     return {
       totalGmvInr,
@@ -2322,6 +2590,42 @@ class ParkPoolStore {
       openIncidents,
       openDisputes,
       expiringProviders,
+      totalRegisteredDrivers: driverEmailSet.size,
+      totalProviders: this.providers.length,
+      totalSpaces: realSpaces.length,
+      totalBookings: realBookings.length,
+      todayBookings,
+      averageBookingValueInr,
+      missingOrExpiredDocsCount,
+      pendingRefundsCount,
+      criticalIncidentsCount,
+      bookingBreakdown: {
+        completed: completedBookings,
+        cancelled: cancelledBookings,
+        pending: pendingBookings,
+        active: activeBookings,
+        expired: expiredBookings,
+      },
+      dailyBookingTrends,
+      monthlyBookingTrends,
+      revenueStats: {
+        grossPaidInr: totalGmvInr,
+        platformFeesInr: platformRevenueInr,
+        taxCollectedInr,
+        settledToHostsInr: totalSettledHostInr,
+        pendingHostPayoutInr,
+        refundedInr: totalRefundedInr,
+        averageOrderValueInr: averageBookingValueInr,
+      },
+      networkOverview: {
+        activeSpaces: activeSpacesList.length,
+        inactiveSpaces: realSpaces.length - activeSpacesList.length,
+        availableSpaces,
+        occupiedSpaces,
+        clearanceOrBlockedSpaces,
+        byZone,
+      },
+      recentActivity,
     };
   }
 
@@ -2330,9 +2634,248 @@ class ParkPoolStore {
     return this.providers.filter((p) => p.contactEmail.toLowerCase() === clean);
   }
 
+  private ensureHostPortfolioSeeded(user: UserSession, provider: ProviderRecord): void {
+    if (this.seededPortfolioProviderIds.has(provider.id)) return;
+    const alreadyHasFacilities = this.facilities.some((f) => f.providerId === provider.id);
+    if (alreadyHasFacilities) {
+      this.seededPortfolioProviderIds.add(provider.id);
+      return;
+    }
+
+    this.seededPortfolioProviderIds.add(provider.id);
+
+    // Select representative verified Bengaluru driver listings across all hubs
+    const catalogFacilities = this.facilities.filter(
+      (f) => !this.hostSandboxFacilityIds.has(f.id) && f.verificationStatus === 'verified'
+    );
+    const seenZones = new Set<string>();
+    const chosenTemplates: Facility[] = [];
+
+    for (const fac of catalogFacilities) {
+      const zoneKey = fac.zone.trim().toLowerCase();
+      if (!seenZones.has(zoneKey)) {
+        seenZones.add(zoneKey);
+        chosenTemplates.push(fac);
+      }
+      if (chosenTemplates.length >= 18) break;
+    }
+
+    const prvTag = provider.id.replace(/[^A-Z0-9]/gi, '').slice(-5);
+    const clonedFacilities: Facility[] = [];
+    const clonedSpaces: ParkingSpace[] = [];
+    const nowIso = new Date().toISOString();
+
+    chosenTemplates.forEach((tpl, idx) => {
+      const num = String(idx + 1).padStart(2, '0');
+      const facId = `FAC-H${prvTag}-${num}`;
+      const clonedFac: Facility = {
+        ...tpl,
+        id: facId,
+        providerId: provider.id,
+        providerName: provider.organizationName || user.name,
+        lastUpdatedIso: nowIso,
+        facilityGateQrToken: signFacilityGateQrToken(facId, tpl.entranceLabel),
+        operationalChecks: { ...tpl.operationalChecks },
+        restrictions: [...tpl.restrictions],
+        lateArrivalPolicy: { ...tpl.lateArrivalPolicy },
+        walkPathCoords: tpl.walkPathCoords.map((pt) => [pt[0], pt[1]] as [number, number]),
+      };
+      this.hostSandboxFacilityIds.add(facId);
+      this.facilities.push(clonedFac);
+      clonedFacilities.push(clonedFac);
+
+      const tplSpaces = this.spaces.filter((s) => s.facilityId === tpl.id);
+      const spacesToCopy = tplSpaces.length > 0 ? tplSpaces.slice(0, 2) : [];
+      spacesToCopy.forEach((sp, sIdx) => {
+        const spId = `BAY-H${prvTag}-${num}-${sIdx + 1}`;
+        const clonedSp: ParkingSpace = {
+          ...sp,
+          id: spId,
+          facilityId: facId,
+          allowedTypes: [...sp.allowedTypes],
+          restrictions: [...sp.restrictions],
+          ownerBlocks: [],
+          withdrawals: [],
+          reviews: [...sp.reviews],
+          occupancyState: 'AVAILABLE',
+          activeOccupancyBookingId: undefined,
+          clearanceEndsAt: undefined,
+          bufferCompleted: true,
+          vacancyConfirmed: true,
+          lastOccupancyEvent: 'Open for provider testing & scheduling',
+        };
+        this.spaces.push(clonedSp);
+        clonedSpaces.push(clonedSp);
+      });
+    });
+
+    // Seed 3 sample bookings + 2 settlement records owned solely by this provider so Calendar, Bookings, QR & Settlements are immediately testable
+    if (clonedFacilities.length >= 2 && clonedSpaces.length >= 3) {
+      const facA = clonedFacilities[0];
+      const spA = clonedSpaces.find((s) => s.facilityId === facA.id) || clonedSpaces[0];
+      const facB = clonedFacilities[1];
+      const spB = clonedSpaces.find((s) => s.facilityId === facB.id) || clonedSpaces[1];
+      const facC = clonedFacilities[2] || facA;
+      const spC = clonedSpaces.find((s) => s.facilityId === facC.id) || clonedSpaces[2];
+
+      const sampleBookings: BookingRecord[] = [
+        {
+          id: `BK-H${prvTag}-101`,
+          spaceId: spA.id,
+          facilityId: facA.id,
+          facilityName: facA.name,
+          spaceCode: spA.spaceCode,
+          driverName: 'Aarav Sharma',
+          driverEmail: 'aarav.sharma@bengaluru.in',
+          driverLicense: 'KA04 20210048192',
+          vehicleId: 'VEH-SUV-01',
+          vehicleLabel: 'Tata Harrier EV (SUV)',
+          vehiclePlate: 'KA-04-MN-8821',
+          startMin: 10 * 60,
+          endMin: 13 * 60,
+          bufferMinutes: spA.bufferMinutes,
+          status: 'confirmed',
+          baseAmountInr: spA.hourlyPriceInr * 3,
+          platformFeeInr: Math.round(spA.hourlyPriceInr * 0.3),
+          gstInr: Math.round(spA.hourlyPriceInr * 0.6),
+          totalAmountInr: Math.round(spA.hourlyPriceInr * 3.9),
+          accessCode: `PKP-${prvTag.slice(-3)}-101`,
+          entranceLabel: facA.entranceLabel,
+          createdAt: nowIso,
+          lateArrivalPolicy: { ...facA.lateArrivalPolicy },
+          extensionRequests: [
+            {
+              id: `EXT-H${prvTag}-01`,
+              bookingId: `BK-H${prvTag}-101`,
+              requestedEndMin: 14 * 60,
+              additionalBaseInr: spA.hourlyPriceInr,
+              additionalFeeInr: 10,
+              additionalGstInr: Math.round((spA.hourlyPriceInr + 10) * 0.18),
+              additionalTotalInr: Math.round((spA.hourlyPriceInr + 10) * 1.18),
+              status: 'pending_host_approval',
+              reason: 'Meeting running 1 hour longer nearby',
+              createdAt: nowIso,
+            },
+          ],
+          paymentStatus: 'paid',
+          refundStatus: 'none',
+          invoiceNumber: `INV-PKP-${prvTag}-101`,
+          qrPassToken: signBookingQrToken(`BK-H${prvTag}-101`, facA.id, `PKP-${prvTag.slice(-3)}-101`),
+          auditTrail: ['Confirmed & Paid for provider testing'],
+        },
+        {
+          id: `BK-H${prvTag}-102`,
+          spaceId: spB.id,
+          facilityId: facB.id,
+          facilityName: facB.name,
+          spaceCode: spB.spaceCode,
+          driverName: 'Priya Nair',
+          driverEmail: 'priya.nair@bengaluru.in',
+          driverLicense: 'KA01 20200019441',
+          vehicleId: 'VEH-HATCH-03',
+          vehicleLabel: 'Tata Tiago EV (Hatchback)',
+          vehiclePlate: 'KA-01-XY-2045',
+          startMin: 14 * 60,
+          endMin: 16 * 60,
+          bufferMinutes: spB.bufferMinutes,
+          status: 'checked-in',
+          baseAmountInr: spB.hourlyPriceInr * 2,
+          platformFeeInr: Math.round(spB.hourlyPriceInr * 0.2),
+          gstInr: Math.round(spB.hourlyPriceInr * 0.4),
+          totalAmountInr: Math.round(spB.hourlyPriceInr * 2.6),
+          accessCode: `PKP-${prvTag.slice(-3)}-102`,
+          entranceLabel: facB.entranceLabel,
+          createdAt: nowIso,
+          checkedInAt: nowIso,
+          arrivalStatus: 'on_time',
+          lateArrivalPolicy: { ...facB.lateArrivalPolicy },
+          extensionRequests: [],
+          paymentStatus: 'paid',
+          refundStatus: 'none',
+          invoiceNumber: `INV-PKP-${prvTag}-102`,
+          qrPassToken: signBookingQrToken(`BK-H${prvTag}-102`, facB.id, `PKP-${prvTag.slice(-3)}-102`),
+          auditTrail: ['Confirmed & Paid', 'Driver Checked-in at Gate'],
+        },
+        {
+          id: `BK-H${prvTag}-103`,
+          spaceId: spC.id,
+          facilityId: facC.id,
+          facilityName: facC.name,
+          spaceCode: spC.spaceCode,
+          driverName: 'Ananya Kumar',
+          driverEmail: 'anuak2628@gmail.com',
+          vehicleId: 'VEH-SEDAN-02',
+          vehicleLabel: 'Honda City e:HEV (Sedan)',
+          vehiclePlate: 'KA-03-AB-4190',
+          startMin: 9 * 60,
+          endMin: 11 * 60,
+          bufferMinutes: spC.bufferMinutes,
+          status: 'completed',
+          baseAmountInr: spC.hourlyPriceInr * 2,
+          platformFeeInr: Math.round(spC.hourlyPriceInr * 0.2),
+          gstInr: Math.round(spC.hourlyPriceInr * 0.4),
+          totalAmountInr: Math.round(spC.hourlyPriceInr * 2.6),
+          accessCode: `PKP-${prvTag.slice(-3)}-103`,
+          entranceLabel: facC.entranceLabel,
+          createdAt: new Date(Date.now() - 86400 * 1000).toISOString(),
+          checkedInAt: new Date(Date.now() - 86400 * 1000).toISOString(),
+          checkedOutAt: new Date(Date.now() - 80000 * 1000).toISOString(),
+          arrivalStatus: 'on_time',
+          lateArrivalPolicy: { ...facC.lateArrivalPolicy },
+          extensionRequests: [],
+          paymentStatus: 'paid',
+          refundStatus: 'none',
+          invoiceNumber: `INV-PKP-${prvTag}-103`,
+          qrPassToken: signBookingQrToken(`BK-H${prvTag}-103`, facC.id, `PKP-${prvTag.slice(-3)}-103`),
+          auditTrail: ['Completed & Released'],
+        },
+      ];
+
+      for (const bk of sampleBookings) {
+        this.hostSandboxBookingIds.add(bk.id);
+        this.bookings.push(bk);
+      }
+
+      const stl1: HostSettlementRecord = {
+        id: `STL-H${prvTag}-102`,
+        providerId: provider.id,
+        providerName: provider.organizationName || user.name,
+        bookingId: sampleBookings[1].id,
+        facilityName: facB.name,
+        grossInr: sampleBookings[1].baseAmountInr,
+        platformCommissionInr: sampleBookings[1].platformFeeInr,
+        gstWithheldInr: sampleBookings[1].gstInr,
+        netPayoutInr: sampleBookings[1].baseAmountInr - sampleBookings[1].platformFeeInr,
+        status: 'scheduled',
+      };
+      const stl2: HostSettlementRecord = {
+        id: `STL-H${prvTag}-103`,
+        providerId: provider.id,
+        providerName: provider.organizationName || user.name,
+        bookingId: sampleBookings[2].id,
+        facilityName: facC.name,
+        grossInr: sampleBookings[2].baseAmountInr,
+        platformCommissionInr: sampleBookings[2].platformFeeInr,
+        gstWithheldInr: sampleBookings[2].gstInr,
+        netPayoutInr: sampleBookings[2].baseAmountInr - sampleBookings[2].platformFeeInr,
+        status: 'settled',
+        settledAt: new Date(Date.now() - 72000 * 1000).toISOString(),
+        utrRef: `UTR-AXIS-${prvTag}881`,
+      };
+      this.hostSandboxSettlementIds.add(stl1.id);
+      this.hostSandboxSettlementIds.add(stl2.id);
+      this.settlements.push(stl1, stl2);
+    }
+
+    this.syncOccupancyStates();
+  }
+
   public ensureProviderForHost(user: UserSession): ProviderRecord {
     const existing = this.getProvidersForHost(user.email)[0];
-    if (existing) return existing;
+    if (existing) {
+      this.ensureHostPortfolioSeeded(user, existing);
+      return existing;
+    }
 
     const cleanEmail = user.email.trim().toLowerCase();
     const nowIso = new Date().toISOString();
@@ -2355,6 +2898,7 @@ class ParkPoolStore {
       updatedAt: nowIso,
     };
     this.providers.unshift(provider);
+    this.ensureHostPortfolioSeeded(user, provider);
     this.addAudit(
       user.name,
       'PROVIDER_AUTO_INITIALIZED',
@@ -2391,6 +2935,12 @@ class ParkPoolStore {
     this.expireStaleHolds();
     this.ensureQrTokens();
     this.syncOccupancyStates();
+    const realFacilities = this.facilities.filter((f) => !this.hostSandboxFacilityIds.has(f.id));
+    const realFacIds = new Set(realFacilities.map((f) => f.id));
+    const realSpaces = this.spaces.filter((s) => realFacIds.has(s.facilityId));
+    const realBookings = this.bookings.filter((b) => !this.hostSandboxBookingIds.has(b.id));
+    const realSettlements = this.settlements.filter((s) => !this.hostSandboxSettlementIds.has(s.id));
+
     return {
       pilotZone: this.pilotZone,
       destinationName: this.destinationName,
@@ -2400,13 +2950,13 @@ class ParkPoolStore {
       driverProfiles: this.driverProfiles,
       providers: this.providers,
       evidenceChecklists: EVIDENCE_CHECKLISTS,
-      facilities: this.facilities,
-      spaces: this.spaces,
-      bookings: this.bookings,
+      facilities: realFacilities,
+      spaces: realSpaces,
+      bookings: realBookings,
       paymentOrders: this.paymentOrders,
       webhookEvents: this.webhookEvents,
       refunds: this.refunds,
-      settlements: this.settlements,
+      settlements: realSettlements,
       transactions: this.transactions,
       incidents: this.incidents,
       disputes: this.disputes,
@@ -2422,6 +2972,10 @@ class ParkPoolStore {
   public getSnapshotForUser(user: UserSession): WorkspaceSnapshot {
     if (user.role === 'admin') {
       return this.getSnapshot();
+    }
+
+    if (user.role === 'host') {
+      this.ensureProviderForHost(user);
     }
 
     this.expireStaleHolds();
@@ -2555,8 +3109,9 @@ class ParkPoolStore {
     const visibleFacilities = this.facilities
       .filter(
         (f) =>
-          f.verificationStatus === 'verified' ||
-          ownFacilityIdsFromBookings.has(f.id)
+          !this.hostSandboxFacilityIds.has(f.id) &&
+          (f.verificationStatus === 'verified' ||
+            ownFacilityIdsFromBookings.has(f.id))
       )
       .map((f) => ({
         ...f,
@@ -3632,8 +4187,10 @@ class ParkPoolStore {
   ) {
     this.expireStaleHolds();
     this.syncOccupancyStates();
-    const all = this.spaces.map((space) => {
-      const facility = this.facilities.find((f) => f.id === space.facilityId)!;
+    const all = this.spaces
+      .filter((space) => !this.hostSandboxFacilityIds.has(space.facilityId))
+      .map((space) => {
+        const facility = this.facilities.find((f) => f.id === space.facilityId)!;
       const ev = this.evaluateSpace(space, facility, reqStartMin, reqEndMin, vehicle, prioritize);
       if (targetCoords) {
         const distM = calcGeoMeters(

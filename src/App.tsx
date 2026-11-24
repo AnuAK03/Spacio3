@@ -59,6 +59,7 @@ type AppTab =
   | 'provider-facilities'
   | 'provider-bookings'
   | 'provider-settlements'
+  | 'admin-overview'
   | 'admin-providers'
   | 'admin-spaces'
   | 'admin-payments'
@@ -188,7 +189,7 @@ export default function App() {
     if (session.role === 'host') {
       setActiveTab('provider-onboarding');
     } else if (session.role === 'admin') {
-      setActiveTab('admin-providers');
+      setActiveTab('admin-overview');
     } else {
       setActiveTab('find');
     }
@@ -1088,10 +1089,11 @@ export default function App() {
         ]
       : user.role === 'admin'
       ? [
-          { id: 'admin-providers', label: 'Providers & Docs', icon: ShieldCheck },
-          { id: 'admin-spaces', label: 'Space Approvals', icon: FileText },
-          { id: 'admin-payments', label: 'Payments & Refunds', icon: CreditCard },
-          { id: 'admin-ops', label: 'Ops & Analytics', icon: Pulse },
+          { id: 'admin-overview', label: 'Overview', icon: SquaresFour },
+          { id: 'admin-providers', label: 'Providers', icon: ShieldCheck },
+          { id: 'admin-spaces', label: 'Spaces', icon: FileText },
+          { id: 'admin-payments', label: 'Payments', icon: CreditCard },
+          { id: 'admin-ops', label: 'Operations', icon: Pulse },
         ]
       : [
           { id: 'find', label: 'Find Parking', icon: MapPin },
@@ -1112,7 +1114,7 @@ export default function App() {
     user.role === 'host'
       ? 'provider-onboarding'
       : user.role === 'admin'
-      ? 'admin-providers'
+      ? 'admin-overview'
       : 'find';
 
   const providerSubTab: 'onboarding' | 'facilities' | 'bookings' | 'settlements' =
@@ -1125,13 +1127,15 @@ export default function App() {
       : 'onboarding';
 
   const adminSubTab: AdminSubTab =
-    activeTab === 'admin-spaces'
+    activeTab === 'admin-providers'
+      ? 'providers'
+      : activeTab === 'admin-spaces'
       ? 'spaces'
       : activeTab === 'admin-payments'
       ? 'payments'
       : activeTab === 'admin-ops'
       ? 'ops'
-      : 'providers';
+      : 'overview';
 
   return (
     <div className="relative min-h-screen text-[#111827]">
@@ -1447,6 +1451,7 @@ export default function App() {
                 onSaveProfile={handleSaveDriverProfile}
                 onAddVehicle={handleAddVehicle}
                 onDeleteVehicle={handleDeleteVehicle}
+                onLogout={handleLogout}
               />
             )}
 

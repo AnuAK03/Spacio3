@@ -546,6 +546,40 @@ export interface AutonomousLifecycleEvent {
   steps: AutonomousLifecycleStep[];
 }
 
+export interface AdminBookingTrendPoint {
+  label: string;
+  key: string;
+  bookings: number;
+  revenueInr: number;
+}
+
+export interface AdminZoneOverviewItem {
+  zone: string;
+  facilityCount: number;
+  totalSpaces: number;
+  activeSpaces: number;
+  inactiveSpaces: number;
+  availableSpaces: number;
+  occupiedSpaces: number;
+  avgLat: number;
+  avgLng: number;
+}
+
+export interface AdminRecentActivityItem {
+  id: string;
+  timestamp: string;
+  category:
+    | 'user_registration'
+    | 'provider_registration'
+    | 'space_submission'
+    | 'booking_update'
+    | 'payment_refund'
+    | 'admin_action';
+  title: string;
+  detail: string;
+  targetTab: 'providers' | 'spaces' | 'payments' | 'ops';
+}
+
 export interface AdminAnalytics {
   totalGmvInr: number;
   platformRevenueInr: number;
@@ -560,6 +594,42 @@ export interface AdminAnalytics {
   openIncidents: number;
   openDisputes: number;
   expiringProviders: number;
+  totalRegisteredDrivers?: number;
+  totalProviders?: number;
+  totalSpaces?: number;
+  totalBookings?: number;
+  todayBookings?: number;
+  averageBookingValueInr?: number;
+  missingOrExpiredDocsCount?: number;
+  pendingRefundsCount?: number;
+  criticalIncidentsCount?: number;
+  bookingBreakdown?: {
+    completed: number;
+    cancelled: number;
+    pending: number;
+    active: number;
+    expired: number;
+  };
+  dailyBookingTrends?: AdminBookingTrendPoint[];
+  monthlyBookingTrends?: AdminBookingTrendPoint[];
+  revenueStats?: {
+    grossPaidInr: number;
+    platformFeesInr: number;
+    taxCollectedInr: number;
+    settledToHostsInr: number;
+    pendingHostPayoutInr: number;
+    refundedInr: number;
+    averageOrderValueInr: number;
+  };
+  networkOverview?: {
+    activeSpaces: number;
+    inactiveSpaces: number;
+    availableSpaces: number;
+    occupiedSpaces: number;
+    clearanceOrBlockedSpaces: number;
+    byZone: AdminZoneOverviewItem[];
+  };
+  recentActivity?: AdminRecentActivityItem[];
 }
 
 export interface ConstraintCheck {

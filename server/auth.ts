@@ -434,3 +434,41 @@ export function loginAdminPasscode(params: {
   const token = signSessionToken(user);
   return { ok: true, token, user };
 }
+
+export function getAuthDirectorySummary(): {
+  registeredDrivers: number;
+  registeredHosts: number;
+  driverEmails: string[];
+  hostEmails: string[];
+  recentRegistrations: Array<{
+    uid: string;
+    displayName: string;
+    email: string;
+    role: 'driver' | 'host';
+    organization: string;
+    createdAt: string;
+  }>;
+} {
+  const drivers = authStore.users.filter((u) => u.role === 'driver');
+  const hosts = authStore.users.filter((u) => u.role === 'host');
+  const recentRegistrations = [...authStore.users]
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .slice(0, 12)
+    .map((u) => ({
+      uid: u.uid,
+      displayName: u.displayName,
+      email: u.email,
+      role: u.role,
+      organization: u.organization,
+      createdAt: u.createdAt,
+    }));
+
+  return {
+    registeredDrivers: drivers.length,
+    registeredHosts: hosts.length,
+    driverEmails: drivers.map((d) => d.email.toLowerCase()),
+    hostEmails: hosts.map((h) => h.email.toLowerCase()),
+    recentRegistrations,
+  };
+}
+

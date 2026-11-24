@@ -1,15 +1,24 @@
 import React, { useMemo, useState } from 'react';
 import {
+  ArrowRight,
   ArrowsClockwise,
+  Buildings,
+  CalendarCheck,
+  Car,
+  ChartBar,
   CheckCircle,
+  ClockCounterClockwise,
   CreditCard,
+  CurrencyInr,
   Eye,
+  FileText,
   LockSimple,
+  MapPin,
   Pulse,
-  Robot,
   SealCheck,
   ShieldCheck,
   ShieldWarning,
+  Users,
   Wallet,
   Warning,
   X,
@@ -35,7 +44,7 @@ import {
   UserSession,
 } from '../types/parkpool';
 
-export type AdminSubTab = 'providers' | 'spaces' | 'payments' | 'ops';
+export type AdminSubTab = 'overview' | 'providers' | 'spaces' | 'payments' | 'ops';
 
 interface AdminPortalViewProps {
   user: UserSession;
@@ -119,13 +128,13 @@ interface AdminPortalViewProps {
   ) => Promise<void>;
 }
 
-const VERIFY_DECISIONS: ProviderVerificationStatus[] = [
-  'UNDER_REVIEW',
-  'NEEDS_MORE_INFORMATION',
-  'APPROVED',
-  'REJECTED',
-  'SUSPENDED',
-  'EXPIRED',
+const VERIFY_DECISIONS: Array<{ id: ProviderVerificationStatus; label: string }> = [
+  { id: 'UNDER_REVIEW', label: 'Under review' },
+  { id: 'NEEDS_MORE_INFORMATION', label: 'Needs more info' },
+  { id: 'APPROVED', label: 'Approved' },
+  { id: 'REJECTED', label: 'Rejected' },
+  { id: 'SUSPENDED', label: 'Suspended' },
+  { id: 'EXPIRED', label: 'Expired' },
 ];
 
 const STATUS_PRIORITY: Record<ProviderVerificationStatus, number> = {
@@ -139,21 +148,59 @@ const STATUS_PRIORITY: Record<ProviderVerificationStatus, number> = {
   APPROVED: 7,
 };
 
+function statusLabel(status: ProviderVerificationStatus): string {
+  switch (status) {
+    case 'APPROVED':
+      return 'Verified';
+    case 'SUBMITTED':
+      return 'Submitted';
+    case 'UNDER_REVIEW':
+      return 'Under review';
+    case 'NEEDS_MORE_INFORMATION':
+      return 'Needs info';
+    case 'NOT_SUBMITTED':
+      return 'Not submitted';
+    case 'EXPIRED':
+      return 'Expired';
+    case 'REJECTED':
+      return 'Rejected';
+    case 'SUSPENDED':
+      return 'Suspended';
+    default:
+      return status;
+  }
+}
+
 function statusTone(status: ProviderVerificationStatus): string {
   switch (status) {
     case 'APPROVED':
-      return 'text-[#047857]';
+      return 'border-emerald-200 bg-emerald-50 text-[#047857]';
     case 'SUBMITTED':
     case 'UNDER_REVIEW':
     case 'NEEDS_MORE_INFORMATION':
-      return 'text-[#C83709]';
+      return 'border-amber-200 bg-amber-50 text-[#C83709]';
     case 'REJECTED':
     case 'SUSPENDED':
     case 'EXPIRED':
-      return 'text-rose-700';
+      return 'border-rose-200 bg-rose-50 text-rose-700';
     default:
-      return 'text-[#4B5563]';
+      return 'border-black/[0.08] bg-[#F8F7F4] text-[#4B5563]';
   }
+}
+
+function formatInr(amount: number): string {
+  return `₹${Math.round(amount).toLocaleString('en-IN')}`;
+}
+
+function formatShortTime(iso: string): string {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return iso;
+  return new Date(ms).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
@@ -203,7 +250,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
 
   const [decision, setDecision] = useState<ProviderVerificationStatus>('APPROVED');
   const [reason, setReason] = useState(
-    'Identity, property authority, and permitted visitor parking use verified.'
+    'Identity, property authority, and parking permissions verified.'
   );
   const [expiresAt, setExpiresAt] = useState('2027-06-30');
   const [verifyBusy, setVerifyBusy] = useState(false);
@@ -221,7 +268,12 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   } | null>(null);
   const [docBusyId, setDocBusyId] = useState<string | null>(null);
 
+  // Overview trend toggle
+  const [trendMode, setTrendMode] = useState<'daily' | 'monthly'>('daily');
+
   // Space & Operational checks state
+  const [spaceFilter, setSpaceFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [spaceSearch, setSpaceSearch] = useState('');
   const [spaceCheckFeedback, setSpaceCheckFeedback] = useState<{
     spaceId: string;
     error?: string;
@@ -273,6 +325,25 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
     }
   };
 
+  const filteredFacilities = useMemo(() => {
+    const q = spaceSearch.trim().toLowerCase();
+    return facilities.filter((fac) => {
+      const facSpaces = spaces.filter((s) => s.facilityId === fac.id);
+      const hasPending =
+        !fac.operationalChecksPassed ||
+        facSpaces.some((s) => s.publicationStatus !== 'approved');
+      if (spaceFilter === 'pending' && !hasPending) return false;
+      if (spaceFilter === 'approved' && hasPending) return false;
+      if (!q) return true;
+      return (
+        fac.name.toLowerCase().includes(q) ||
+        fac.address.toLowerCase().includes(q) ||
+        fac.zone.toLowerCase().includes(q) ||
+        fac.providerName.toLowerCase().includes(q)
+      );
+    });
+  }, [facilities, spaces, spaceFilter, spaceSearch]);
+
   const filteredAudits = useMemo(() => {
     const q = auditFilter.trim().toLowerCase();
     if (!q) return auditLogs;
@@ -284,49 +355,91 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
     );
   }, [auditLogs, auditFilter]);
 
+  const activeTrends = useMemo(() => {
+    if (trendMode === 'monthly') {
+      return analytics.monthlyBookingTrends || [];
+    }
+    return analytics.dailyBookingTrends || [];
+  }, [trendMode, analytics.dailyBookingTrends, analytics.monthlyBookingTrends]);
+
+  const maxBookingsInTrend = Math.max(1, ...activeTrends.map((t) => t.bookings));
+  const maxRevenueInTrend = Math.max(1, ...activeTrends.map((t) => t.revenueInr));
+
+  const bookingBreakdown = analytics.bookingBreakdown || {
+    completed: bookings.filter((b) => b.status === 'completed').length,
+    cancelled: bookings.filter((b) => b.status === 'cancelled').length,
+    pending: bookings.filter((b) => b.status === 'held').length,
+    active: analytics.activeBookings,
+    expired: bookings.filter((b) => b.status === 'expired').length,
+  };
+
+  const revStats = analytics.revenueStats || {
+    grossPaidInr: analytics.totalGmvInr,
+    platformFeesInr: analytics.platformRevenueInr,
+    taxCollectedInr: 0,
+    settledToHostsInr: analytics.totalSettledHostInr,
+    pendingHostPayoutInr: settlements
+      .filter((s) => s.status === 'scheduled' || s.status === 'pending_checkout')
+      .reduce((sum, s) => sum + s.netPayoutInr, 0),
+    refundedInr: analytics.totalRefundedInr,
+    averageOrderValueInr: analytics.averageBookingValueInr || 0,
+  };
+
+  const network = analytics.networkOverview || {
+    activeSpaces: analytics.approvedSpaces,
+    inactiveSpaces: analytics.pendingSpaces,
+    availableSpaces: spaces.filter(
+      (s) => s.publicationStatus === 'approved' && (!s.occupancyState || s.occupancyState === 'AVAILABLE')
+    ).length,
+    occupiedSpaces: spaces.filter((s) =>
+      ['BOOKED', 'OCCUPIED', 'OVERSTAY', 'DEPARTURE_PENDING'].includes(s.occupancyState || '')
+    ).length,
+    clearanceOrBlockedSpaces: spaces.filter((s) => s.occupancyState === 'CLEARANCE').length,
+    byZone: [],
+  };
+
   return (
     <div className="space-y-6">
-      {/* Admin Command Header & Sub-Tabs */}
+      {/* Admin Header & Navigation */}
       <section className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="heading-5 text-[#111827]">
-              Platform Trust, Verification &amp; Operations
+              Platform Operations Center
             </h1>
             <p className="mt-1 body-6 text-[#4B5563]">
-              Human evidence review, 6 check space publication gate, idempotent payment audits, and safety moderation.
+              Monitor platform activity, approve providers and spaces, and manage payments and safety issues.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => void onAdminPeriodicReview()}
-              className="flex items-center gap-2 whitespace-nowrap shrink-0 rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 button-xsm text-[#111827] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black/[0.05] active:scale-[0.98]"
-            >
-              <ArrowsClockwise className="h-3.5 w-3.5 text-[#4338CA]" weight="bold" />
-              <span>Run Periodic Review Sweep</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => void onAdminPeriodicReview()}
+            className="flex items-center gap-2 whitespace-nowrap shrink-0 rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 button-xsm text-[#111827] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black/[0.05] active:scale-[0.98]"
+          >
+            <ArrowsClockwise className="h-3.5 w-3.5 text-[#4338CA]" weight="bold" />
+            <span>Check expiring licenses</span>
+          </button>
         </div>
 
         <div className="flex flex-wrap gap-2 rounded-xl border border-black/[0.06] bg-[#FAF9F6] p-2">
           {(
             [
+              { id: 'overview', label: 'Overview' },
               {
                 id: 'providers',
-                label: `Providers & Docs (${analytics.pendingProviders} pending)`,
+                label: `Providers (${analytics.pendingProviders} pending)`,
               },
               {
                 id: 'spaces',
-                label: `Space Approvals (${analytics.pendingSpaces} pending)`,
+                label: `Spaces (${analytics.pendingSpaces} pending)`,
               },
               {
                 id: 'payments',
-                label: `Payments & Refunds (${analytics.openDisputes} disputes)`,
+                label: `Payments (${analytics.openDisputes} disputes)`,
               },
               {
                 id: 'ops',
-                label: `Ops & Analytics (${analytics.openIncidents} incidents)`,
+                label: `Operations (${analytics.openIncidents} open)`,
               },
             ] as const
           ).map((tab) => (
@@ -347,26 +460,492 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       </section>
 
       {/* ================================================================= */}
-      {/* TAB 1: PROVIDERS, PRIVATE DOCUMENTS & HUMAN VERIFICATION */}
+      {/* TAB 0: OVERVIEW DASHBOARD (DEFAULT LANDING VIEW) */}
+      {/* ================================================================= */}
+      {subTab === 'overview' && (
+        <div className="space-y-6">
+          {/* 1. 8 KPI Cards */}
+          <section aria-label="Key platform numbers" className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {(
+              [
+                {
+                  label: 'Registered drivers',
+                  value: String(analytics.totalRegisteredDrivers ?? 0),
+                  hint: 'View wallets & ops',
+                  tab: 'ops' as AdminSubTab,
+                  icon: Users,
+                  tone: 'text-[#111827]',
+                },
+                {
+                  label: 'Total providers',
+                  value: String(analytics.totalProviders ?? providers.length),
+                  hint: `${analytics.pendingProviders} awaiting review`,
+                  tab: 'providers' as AdminSubTab,
+                  icon: Buildings,
+                  tone: 'text-[#111827]',
+                },
+                {
+                  label: 'Verified providers',
+                  value: String(analytics.approvedProviders),
+                  hint: 'Approved partners',
+                  tab: 'providers' as AdminSubTab,
+                  icon: SealCheck,
+                  tone: 'text-[#047857]',
+                },
+                {
+                  label: 'Total parking spaces',
+                  value: String(analytics.totalSpaces ?? spaces.length),
+                  hint: `${analytics.pendingSpaces} need approval`,
+                  tab: 'spaces' as AdminSubTab,
+                  icon: Car,
+                  tone: 'text-[#111827]',
+                },
+                {
+                  label: 'Active parking spaces',
+                  value: String(network.activeSpaces),
+                  hint: `${network.availableSpaces} open right now`,
+                  tab: 'spaces' as AdminSubTab,
+                  icon: CheckCircle,
+                  tone: 'text-[#047857]',
+                },
+                {
+                  label: 'Total bookings',
+                  value: String(analytics.totalBookings ?? bookings.length),
+                  hint: `${analytics.activeBookings} active now`,
+                  tab: 'ops' as AdminSubTab,
+                  icon: CalendarCheck,
+                  tone: 'text-[#4338CA]',
+                },
+                {
+                  label: "Today's bookings",
+                  value: String(analytics.todayBookings ?? 0),
+                  hint: 'Created today',
+                  tab: 'ops' as AdminSubTab,
+                  icon: Pulse,
+                  tone: 'text-[#C83709]',
+                },
+                {
+                  label: 'Booking revenue',
+                  value: formatInr(revStats.grossPaidInr),
+                  hint: `Fees ${formatInr(revStats.platformFeesInr)}`,
+                  tab: 'payments' as AdminSubTab,
+                  icon: CurrencyInr,
+                  tone: 'text-[#047857]',
+                },
+              ] as const
+            ).map((card) => {
+              const Icon = card.icon;
+              return (
+                <button
+                  key={card.label}
+                  type="button"
+                  onClick={() => onChangeSubTab(card.tab)}
+                  className="group rounded-2xl border border-black/[0.08] bg-white p-4 text-left transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#4338CA]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4338CA]"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="caption-4 text-[#4B5563]">{card.label}</span>
+                    <Icon className="h-4 w-4 text-[#6B7280] group-hover:text-[#4338CA]" weight="bold" />
+                  </div>
+                  <div className={`mt-2 font-mono heading-5 tabular-nums ${card.tone}`}>
+                    {card.value}
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2 caption-5 text-[#6B7280]">
+                    <span className="truncate">{card.hint}</span>
+                    <ArrowRight className="h-3 w-3 shrink-0 opacity-60 group-hover:translate-x-0.5 group-hover:text-[#4338CA] group-hover:opacity-100" />
+                  </div>
+                </button>
+              );
+            })}
+          </section>
+
+          {/* 2. Requires Your Attention */}
+          <section className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="title-2 text-[#111827]">Requires your attention</h2>
+                <p className="caption-5 text-[#4B5563]">
+                  Select any item below to jump straight to that queue.
+                </p>
+              </div>
+              <span className="caption-4 text-[#4338CA]">
+                Live platform checks
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {(
+                [
+                  {
+                    label: 'Pending provider verifications',
+                    count: analytics.pendingProviders,
+                    note: 'Hosts waiting for identity review',
+                    tab: 'providers' as AdminSubTab,
+                  },
+                  {
+                    label: 'Pending space approvals',
+                    count: analytics.pendingSpaces,
+                    note: 'Parking bays waiting for approval',
+                    tab: 'spaces' as AdminSubTab,
+                  },
+                  {
+                    label: 'Missing or expired documents',
+                    count: analytics.missingOrExpiredDocsCount ?? analytics.expiringProviders,
+                    note: 'Providers needing updated paperwork',
+                    tab: 'providers' as AdminSubTab,
+                  },
+                  {
+                    label: 'Unresolved payment disputes',
+                    count: analytics.openDisputes,
+                    note: 'Driver refund claims to review',
+                    tab: 'payments' as AdminSubTab,
+                  },
+                  {
+                    label: 'Pending refunds',
+                    count: analytics.pendingRefundsCount ?? 0,
+                    note: 'Refund requests awaiting processing',
+                    tab: 'payments' as AdminSubTab,
+                  },
+                  {
+                    label: 'Critical incidents',
+                    count: analytics.criticalIncidentsCount ?? analytics.openIncidents,
+                    note: 'Medium or high severity safety issues',
+                    tab: 'ops' as AdminSubTab,
+                  },
+                ] as const
+              ).map((item) => {
+                const needsAction = item.count > 0;
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => onChangeSubTab(item.tab)}
+                    className={`flex items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#4338CA] ${
+                      needsAction
+                        ? 'border-amber-200 bg-amber-50/60'
+                        : 'border-black/[0.07] bg-[#F8F7F4]'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="title-4 text-[#111827]">{item.label}</div>
+                      <div className="mt-0.5 caption-5 text-[#4B5563]">{item.note}</div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={`font-mono title-2 tabular-nums ${
+                          needsAction ? 'text-[#C83709]' : 'text-[#047857]'
+                        }`}
+                      >
+                        {item.count}
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-[#6B7280]" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* 3. Booking Analytics + Revenue Analytics */}
+          <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Booking Analytics */}
+            <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <ChartBar className="h-5 w-5 text-[#4338CA]" weight="bold" />
+                  <div>
+                    <h2 className="title-2 text-[#111827]">Booking analytics</h2>
+                    <p className="caption-5 text-[#4B5563]">
+                      Volume trends and status summary
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-1 rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-1">
+                  <button
+                    type="button"
+                    onClick={() => setTrendMode('daily')}
+                    className={`rounded-lg px-3 py-1.5 button-xsm ${
+                      trendMode === 'daily' ? 'bg-[#4338CA] text-white' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    Daily
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrendMode('monthly')}
+                    className={`rounded-lg px-3 py-1.5 button-xsm ${
+                      trendMode === 'monthly' ? 'bg-[#4338CA] text-white' : 'text-[#4B5563]'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                  <div className="caption-5 text-[#4B5563]">Completed</div>
+                  <div className="mt-1 font-mono title-2 tabular-nums text-[#047857]">
+                    {bookingBreakdown.completed}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                  <div className="caption-5 text-[#4B5563]">Cancelled</div>
+                  <div className="mt-1 font-mono title-2 tabular-nums text-rose-700">
+                    {bookingBreakdown.cancelled}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                  <div className="caption-5 text-[#4B5563]">Pending holds</div>
+                  <div className="mt-1 font-mono title-2 tabular-nums text-[#C83709]">
+                    {bookingBreakdown.pending}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-black/[0.07] bg-[#FAF9F6] p-4">
+                <div className="flex items-center justify-between caption-4 text-[#374151]">
+                  <span>
+                    {trendMode === 'daily' ? 'Last 7 days bookings' : 'Last 6 months bookings'}
+                  </span>
+                  <span className="font-mono caption-5 text-[#6B7280]">
+                    {bookingBreakdown.active} active right now
+                  </span>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {activeTrends.map((pt) => {
+                    const pct = pt.bookings > 0 ? Math.max(8, Math.round((pt.bookings / maxBookingsInTrend) * 100)) : 0;
+                    return (
+                      <div key={pt.key} className="flex items-center gap-3 caption-5">
+                        <span className="w-16 shrink-0 font-mono text-[#4B5563]">{pt.label}</span>
+                        <div className="h-3 flex-1 overflow-hidden rounded-full bg-black/[0.06]">
+                          <div
+                            className="h-full rounded-full bg-[#4338CA] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="w-10 shrink-0 text-right font-mono tabular-nums text-[#111827]">
+                          {pt.bookings}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Revenue Analytics */}
+            <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <CurrencyInr className="h-5 w-5 text-[#047857]" weight="bold" />
+                  <div>
+                    <h2 className="title-2 text-[#111827]">Revenue analytics</h2>
+                    <p className="caption-5 text-[#4B5563]">
+                      Booking values, platform earnings, and payouts
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onChangeSubTab('payments')}
+                  className="button-xsm text-[#4338CA] hover:underline"
+                >
+                  Open payments
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                  <div className="caption-5 text-[#4B5563]">Average booking</div>
+                  <div className="mt-1 font-mono title-3 tabular-nums text-[#111827]">
+                    {formatInr(revStats.averageOrderValueInr)}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                  <div className="caption-5 text-[#4B5563]">Platform fees</div>
+                  <div className="mt-1 font-mono title-3 tabular-nums text-[#047857]">
+                    {formatInr(revStats.platformFeesInr)}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                  <div className="caption-5 text-[#4B5563]">Host payouts pending</div>
+                  <div className="mt-1 font-mono title-3 tabular-nums text-[#C83709]">
+                    {formatInr(revStats.pendingHostPayoutInr)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-black/[0.07] bg-[#FAF9F6] p-4">
+                <div className="flex items-center justify-between caption-4 text-[#374151]">
+                  <span>
+                    {trendMode === 'daily' ? 'Daily booking value' : 'Monthly booking value'}
+                  </span>
+                  <span className="font-mono caption-5 text-[#6B7280]">
+                    Settled: {formatInr(revStats.settledToHostsInr)}
+                  </span>
+                </div>
+                <div className="mt-2 space-y-2">
+                  {activeTrends.map((pt) => {
+                    const pct = pt.revenueInr > 0 ? Math.max(8, Math.round((pt.revenueInr / maxRevenueInTrend) * 100)) : 0;
+                    return (
+                      <div key={pt.key} className="flex items-center gap-3 caption-5">
+                        <span className="w-16 shrink-0 font-mono text-[#4B5563]">{pt.label}</span>
+                        <div className="h-3 flex-1 overflow-hidden rounded-full bg-black/[0.06]">
+                          <div
+                            className="h-full rounded-full bg-[#047857] transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="w-16 shrink-0 text-right font-mono tabular-nums text-[#111827]">
+                          {formatInr(pt.revenueInr)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 4. Parking Network Overview + Recent Activity */}
+          <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Parking Network Overview */}
+            <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-4 lg:col-span-7">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-[#C83709]" weight="bold" />
+                  <div>
+                    <h2 className="title-2 text-[#111827]">Parking network overview</h2>
+                    <p className="caption-5 text-[#4B5563]">
+                      Active capacity and geographic coverage across Bengaluru
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onChangeSubTab('spaces')}
+                  className="button-xsm text-[#4338CA] hover:underline"
+                >
+                  Manage spaces
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                  <div className="caption-5 text-[#4B5563]">Active spaces</div>
+                  <div className="mt-1 font-mono title-3 tabular-nums text-[#047857]">
+                    {network.activeSpaces}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                  <div className="caption-5 text-[#4B5563]">Inactive spaces</div>
+                  <div className="mt-1 font-mono title-3 tabular-nums text-[#4B5563]">
+                    {network.inactiveSpaces}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                  <div className="caption-5 text-[#4B5563]">Available now</div>
+                  <div className="mt-1 font-mono title-3 tabular-nums text-[#047857]">
+                    {network.availableSpaces}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                  <div className="caption-5 text-[#4B5563]">Occupied or booked</div>
+                  <div className="mt-1 font-mono title-3 tabular-nums text-[#C83709]">
+                    {network.occupiedSpaces}
+                  </div>
+                </div>
+              </div>
+
+              <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                {network.byZone.map((z) => (
+                  <div
+                    key={z.zone}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-black/[0.07] bg-[#FAF9F6] px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="title-4 text-[#111827]">{z.zone}</div>
+                      <div className="mt-0.5 font-mono caption-5 text-[#6B7280]">
+                        {z.facilityCount} {z.facilityCount === 1 ? 'site' : 'sites'} ({z.avgLat}, {z.avgLng})
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 font-mono caption-4 tabular-nums">
+                      <span className="text-[#047857]">{z.activeSpaces} active</span>
+                      <span className="text-[#6B7280]">{z.inactiveSpaces} inactive</span>
+                      <span className="rounded-lg border border-black/[0.08] bg-white px-2 py-1 text-[#111827]">
+                        {z.availableSpaces} free / {z.occupiedSpaces} busy
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-4 lg:col-span-5">
+              <div className="flex items-center gap-2">
+                <ClockCounterClockwise className="h-5 w-5 text-[#4338CA]" weight="bold" />
+                <div>
+                  <h2 className="title-2 text-[#111827]">Recent activity</h2>
+                  <p className="caption-5 text-[#4B5563]">
+                    Registrations, bookings, payments, and reviews
+                  </p>
+                </div>
+              </div>
+
+              <div className="max-h-88 space-y-2 overflow-y-auto pr-1">
+                {(analytics.recentActivity || []).length === 0 ? (
+                  <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-4 caption-5 text-[#4B5563]">
+                    No recent activity recorded yet.
+                  </div>
+                ) : (
+                  (analytics.recentActivity || []).map((act) => (
+                    <button
+                      key={act.id}
+                      type="button"
+                      onClick={() => onChangeSubTab(act.targetTab)}
+                      className="flex w-full items-start justify-between gap-3 rounded-xl border border-black/[0.07] bg-[#FAF9F6] px-4 py-3 text-left transition-colors duration-200 hover:border-[#4338CA]/40"
+                    >
+                      <div className="min-w-0">
+                        <div className="truncate title-5 text-[#111827]">{act.title}</div>
+                        <div className="mt-0.5 truncate caption-5 text-[#4B5563]">{act.detail}</div>
+                      </div>
+                      <span className="shrink-0 font-mono caption-5 text-[#6B7280]">
+                        {formatShortTime(act.timestamp)}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* TAB 1: PROVIDERS, DOCUMENTS & VERIFICATION WORKSPACE */}
       {/* ================================================================= */}
       {subTab === 'providers' && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           {/* Provider Queue */}
-          <section className="rounded-2xl border border-black/[0.08] bg-white p-6 lg:col-span-5">
+          <section className="rounded-2xl border border-black/[0.08] bg-white p-6 lg:col-span-4">
             <h2 className="title-3 text-[#111827]">
-              Provider Verification Queue ({sortedProviders.length})
+              Providers ({sortedProviders.length})
             </h2>
             <p className="mt-1 caption-5 text-[#4B5563]">
-              Select a provider to inspect private vault documents and issue a human decision.
+              Pick a provider to inspect their documents and verify their account.
             </p>
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 max-h-[680px] space-y-2 overflow-y-auto pr-1">
               {sortedProviders.map((prov) => {
                 const selected = activeProvider?.id === prov.id;
                 return (
                   <button
                     key={prov.id}
                     type="button"
-                    onClick={() => setSelectedProviderId(prov.id)}
+                    onClick={() => {
+                      setSelectedProviderId(prov.id);
+                      setInspectedDoc(null);
+                    }}
                     className={`w-full rounded-xl border p-3 text-left transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                       selected
                         ? 'border-[#4338CA] bg-indigo-50/70'
@@ -379,80 +958,84 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                           {prov.organizationName}
                         </div>
                         <div className="mt-0.5 caption-5 text-[#4B5563]">
-                          {prov.name} · {prov.providerType.replace('_', ' ')} ·{' '}
-                          {prov.documents.length} doc(s)
+                          {prov.name}
                         </div>
                       </div>
                       <span
-                        className={`shrink-0 font-mono caption-3 ${statusTone(
+                        className={`shrink-0 rounded-lg border px-2 py-0.5 caption-4 ${statusTone(
                           prov.verificationStatus
                         )}`}
                       >
-                        {prov.verificationStatus}
+                        {statusLabel(prov.verificationStatus)}
                       </span>
                     </div>
-                    {(prov.complaintsCount > 0 ||
-                      prov.operatorChangeFlagged ||
-                      prov.aiPrecheckWarnings.length > 0) && (
-                      <div className="mt-2 flex flex-wrap gap-3 caption-3 text-amber-800">
-                        {prov.aiPrecheckWarnings.length > 0 && (
-                          <span>{prov.aiPrecheckWarnings.length} AI advisory flag(s)</span>
-                        )}
-                        {prov.complaintsCount > 0 && (
-                          <span>{prov.complaintsCount} complaint(s)</span>
-                        )}
-                        {prov.operatorChangeFlagged && <span>Operator change flagged</span>}
-                      </div>
-                    )}
+                    <div className="mt-2 flex items-center justify-between caption-5 text-[#6B7280]">
+                      <span>{prov.documents.length} document(s)</span>
+                      {prov.aiPrecheckWarnings.length > 0 && (
+                        <span className="text-amber-800">Needs document check</span>
+                      )}
+                    </div>
                   </button>
                 );
               })}
             </div>
           </section>
 
-          {/* Selected Provider Inspection & Decision */}
-          <section className="space-y-4 lg:col-span-7">
+          {/* Expanded Provider Review Workspace */}
+          <section className="space-y-4 lg:col-span-8">
             {activeProvider && (
-              <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-4">
-                <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-black/[0.06] bg-[#FAF9F6] p-4">
-                  <div>
-                    <div className="font-mono caption-3 text-[#4338CA]">
-                      {activeProvider.id} · {activeProvider.providerType.replace('_', ' ')}
+              <div className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-6">
+                {/* Provider Profile Summary */}
+                <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-black/[0.06] bg-[#FAF9F6] p-4">
+                  <div className="space-y-1">
+                    <div className="caption-4 text-[#4338CA]">
+                      {activeProvider.providerType.replace(/_/g, ' ')}
                     </div>
-                    <h2 className="mt-1 heading-6 text-[#111827]">
+                    <h2 className="heading-6 text-[#111827]">
                       {activeProvider.organizationName}
                     </h2>
-                    <div className="mt-1 caption-5 text-[#4B5563]">
-                      {activeProvider.contactName} · {activeProvider.contactEmail} ·{' '}
-                      {activeProvider.contactPhone}
-                      {activeProvider.registrationNumber
-                        ? ` · Reg: ${activeProvider.registrationNumber}`
-                        : ''}
-                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="caption-5 text-[#4B5563]">Current Status</div>
-                    <div
-                      className={`font-mono title-4 ${statusTone(
+                  <div className="flex flex-col items-end gap-1">
+                    <span
+                      className={`rounded-lg border px-3 py-1 caption-3 ${statusTone(
                         activeProvider.verificationStatus
                       )}`}
                     >
-                      {activeProvider.verificationStatus}
-                    </div>
+                      {statusLabel(activeProvider.verificationStatus)}
+                    </span>
                     {activeProvider.expiresAt && (
-                      <div className="font-mono caption-5 text-[#6B7280]">
-                        Exp: {activeProvider.expiresAt}
-                      </div>
+                      <span className="caption-5 text-[#6B7280]">
+                        Valid until {activeProvider.expiresAt}
+                      </span>
                     )}
                   </div>
                 </div>
 
-                {activeProvider.aiPrecheckWarnings.length > 0 && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 caption-5 text-amber-950">
-                    <div className="caption-3">
-                      AI Missing field precheck (Advisory only, human admin makes final decision)
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                    <div className="caption-5 text-[#6B7280]">Contact person</div>
+                    <div className="mt-1 title-5 text-[#111827]">{activeProvider.contactName}</div>
+                  </div>
+                  <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                    <div className="caption-5 text-[#6B7280]">Email</div>
+                    <div className="mt-1 truncate caption-2 text-[#111827]">{activeProvider.contactEmail}</div>
+                  </div>
+                  <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                    <div className="caption-5 text-[#6B7280]">Phone</div>
+                    <div className="mt-1 font-mono caption-2 text-[#111827]">{activeProvider.contactPhone}</div>
+                  </div>
+                  <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3">
+                    <div className="caption-5 text-[#6B7280]">Registration ID</div>
+                    <div className="mt-1 font-mono caption-2 text-[#111827]">
+                      {activeProvider.registrationNumber || 'Not provided'}
                     </div>
-                    <ul className="mt-1 list-disc pl-4">
+                  </div>
+                </div>
+
+                {activeProvider.aiPrecheckWarnings.length > 0 && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 caption-2 text-amber-950">
+                    <div className="title-5">Document warnings</div>
+                    <ul className="mt-1 list-disc pl-4 caption-5">
                       {activeProvider.aiPrecheckWarnings.map((w, i) => (
                         <li key={i}>{w}</li>
                       ))}
@@ -460,52 +1043,83 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   </div>
                 )}
 
-                {/* Private Evidence Vault */}
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="flex items-center gap-2 caption-3 uppercase tracking-wide text-[#374151]">
-                      <LockSimple className="h-3.5 w-3.5 text-[#4338CA]" weight="bold" />
-                      <span>Private Object Storage Evidence ({activeProvider.documents.length})</span>
+                {/* Documents List & Side-by-side / Spacious Viewer */}
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="flex items-center gap-2 title-4 text-[#111827]">
+                      <LockSimple className="h-4 w-4 text-[#4338CA]" weight="bold" />
+                      <span>Uploaded documents ({activeProvider.documents.length})</span>
                     </h3>
                     <span className="caption-5 text-[#6B7280]">
-                      5 min HMAC signed viewer links only
+                      Protected viewing links expire after 5 minutes
                     </span>
                   </div>
 
                   {activeProvider.documents.length === 0 ? (
-                    <div className="mt-2 rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-3 caption-5 text-[#4B5563]">
-                      No verification documents submitted yet.
+                    <div className="rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-4 caption-2 text-[#4B5563]">
+                      No verification documents uploaded yet.
                     </div>
                   ) : (
-                    <div className="mt-2 space-y-2">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       {activeProvider.documents.map((doc) => (
                         <div
                           key={doc.id}
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-black/[0.06] bg-[#F8F7F4] px-3 py-2 caption-5"
+                          className="flex flex-col justify-between gap-3 rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-4"
                         >
-                          <div className="min-w-0">
-                            <div className="caption-3 text-[#111827]">
-                              {doc.fileName} ·{' '}
-                              <span className="font-mono text-[#4338CA]">{doc.docType}</span>
+                          <div>
+                            <div className="title-5 text-[#111827]">{doc.fileName}</div>
+                            <div className="mt-1 caption-5 text-[#4B5563]">
+                              Type: {doc.docType.replace(/_/g, ' ')}
                             </div>
-                            <div className="caption-5 text-[#4B5563]">
-                              {doc.id} · Status: {doc.status} · Uploaded{' '}
-                              {doc.uploadedAt.slice(0, 10)}
+                            <div className="mt-0.5 caption-5 text-[#6B7280]">
+                              Status: {doc.status} · Added {doc.uploadedAt.slice(0, 10)}
                             </div>
                           </div>
                           <button
                             type="button"
                             disabled={docBusyId === doc.id}
                             onClick={() => void handleInspectDocument(doc.id)}
-                            className="flex items-center gap-2 whitespace-nowrap shrink-0 rounded-lg border border-black/[0.1] bg-white px-3 py-2 button-xsm text-[#111827] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#4338CA] hover:text-[#4338CA] active:scale-[0.98]"
+                            className="flex items-center justify-center gap-2 rounded-lg border border-black/[0.1] bg-white px-3 py-2 button-xsm text-[#111827] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#4338CA] hover:text-[#4338CA] active:scale-[0.98]"
                           >
                             <Eye className="h-3.5 w-3.5" weight="bold" />
                             <span>
-                              {docBusyId === doc.id ? 'Signing...' : 'Inspect Private Doc'}
+                              {docBusyId === doc.id ? 'Opening...' : 'View document'}
                             </span>
                           </button>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {inspectedDoc && (
+                    <div className="rounded-2xl border border-[#4338CA]/30 bg-indigo-50/50 p-5 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="title-4 text-[#4338CA]">
+                            Document viewer: {inspectedDoc.fileName}
+                          </div>
+                          <div className="mt-0.5 caption-5 text-[#4B5563]">
+                            Opened by {inspectedDoc.accessedBy} · Link valid until{' '}
+                            {new Date(inspectedDoc.expiresAt).toLocaleTimeString()}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setInspectedDoc(null)}
+                          aria-label="Close document preview"
+                          className="rounded-lg border border-black/[0.08] bg-white p-1.5 text-[#4B5563] hover:text-[#111827]"
+                        >
+                          <X className="h-4 w-4" weight="bold" />
+                        </button>
+                      </div>
+                      <div className="min-h-[160px] rounded-xl border border-black/[0.08] bg-white p-4 font-mono caption-2 text-[#111827]">
+                        <div className="mb-2 caption-5 text-[#4B5563]">
+                          Provider: {inspectedDoc.providerName} | Type: {inspectedDoc.docType}
+                        </div>
+                        <div className="whitespace-pre-wrap text-[#374151]">
+                          {inspectedDoc.contentText}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -527,52 +1141,52 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                       setVerifyBusy(false);
                     }
                   }}
-                  className="space-y-3 rounded-xl border border-black/[0.06] bg-[#FAF9F6] p-4"
+                  className="space-y-4 rounded-xl border border-black/[0.08] bg-[#FAF9F6] p-5"
                 >
-                  <div className="caption-3 uppercase tracking-wide text-[#374151]">
-                    Record Human Verification Decision (POST /admin/providers/{activeProvider.id}/verification)
+                  <div className="title-4 text-[#111827]">
+                    Review decision
                   </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="mb-1 block caption-4 text-[#4B5563]">
-                        Verification Decision
+                        Status decision
                       </label>
                       <select
                         value={decision}
                         onChange={(e) =>
                           setDecision(e.target.value as ProviderVerificationStatus)
                         }
-                        className="w-full rounded-xl border border-black/[0.1] bg-white px-3 py-2 font-mono caption-3 text-[#111827]"
+                        className="w-full rounded-xl border border-black/[0.1] bg-white px-3 py-2 body-5 text-[#111827]"
                       >
                         {VERIFY_DECISIONS.map((d) => (
-                          <option key={d} value={d}>
-                            {d}
+                          <option key={d.id} value={d.id}>
+                            {d.label}
                           </option>
                         ))}
                       </select>
                     </div>
                     <div>
                       <label className="mb-1 block caption-4 text-[#4B5563]">
-                        Permission Expiry Date
+                        Approval valid until
                       </label>
                       <input
                         type="date"
                         value={expiresAt}
                         onChange={(e) => setExpiresAt(e.target.value)}
-                        className="w-full rounded-xl border border-black/[0.1] bg-white px-3 py-2 font-mono caption-5 text-[#111827]"
+                        className="w-full rounded-xl border border-black/[0.1] bg-white px-3 py-2 body-5 text-[#111827]"
                       />
                     </div>
                   </div>
                   <div>
                     <label className="mb-1 block caption-4 text-[#4B5563]">
-                      Review Reason &amp; Evidence Assessment
+                      Review note
                     </label>
                     <input
                       type="text"
                       required
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
-                      className="w-full rounded-xl border border-black/[0.1] bg-white px-3 py-2 caption-5 text-[#111827]"
+                      className="w-full rounded-xl border border-black/[0.1] bg-white px-3 py-2 body-5 text-[#111827]"
                     />
                   </div>
                   <button
@@ -582,47 +1196,10 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   >
                     <ShieldCheck className="h-4 w-4" weight="bold" />
                     <span>
-                      {verifyBusy ? 'Saving Decision...' : `Submit ${decision} Decision`}
+                      {verifyBusy ? 'Saving...' : `Save ${statusLabel(decision).toLowerCase()} decision`}
                     </span>
                   </button>
                 </form>
-              </div>
-            )}
-
-            {/* Signed Private Document Inspection Drawer */}
-            {inspectedDoc && (
-              <div className="rounded-2xl border border-[#4338CA]/30 bg-indigo-50/60 p-4 caption-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-mono caption-3 text-[#4338CA]">
-                      Signed Short lived Document View · {inspectedDoc.fileName}
-                    </div>
-                    <div className="mt-1 caption-5 text-[#4B5563]">
-                      Accessed by {inspectedDoc.accessedBy} · Link expires{' '}
-                      {new Date(inspectedDoc.expiresAt).toLocaleTimeString()}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setInspectedDoc(null)}
-                    aria-label="Close document preview"
-                    className="rounded-lg bg-white p-1 text-[#4B5563] hover:text-[#111827]"
-                  >
-                    <X className="h-4 w-4" weight="bold" />
-                  </button>
-                </div>
-                <div className="mt-3 rounded-xl border border-black/[0.08] bg-white p-3 font-mono caption-5 text-[#111827]">
-                  <div>
-                    <strong className="caption-3">Provider:</strong> {inspectedDoc.providerName} ·{' '}
-                    <strong className="caption-3">Doc Type:</strong> {inspectedDoc.docType}
-                  </div>
-                  <div className="mt-2 whitespace-pre-wrap text-[#374151]">
-                    {inspectedDoc.contentText}
-                  </div>
-                </div>
-                <div className="mt-2 truncate font-mono caption-5 text-[#4B5563]">
-                  Signed URI: {inspectedDoc.signedUrl}
-                </div>
               </div>
             )}
           </section>
@@ -630,22 +1207,54 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       )}
 
       {/* ================================================================= */}
-      {/* TAB 2: FACILITY OPERATIONAL CHECKS & 6-INVARIANT SPACE PUBLICATION */}
+      {/* TAB 2: SPACE APPROVALS */}
       {/* ================================================================= */}
       {subTab === 'spaces' && (
         <div className="space-y-6">
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-black/[0.08] bg-white p-4">
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { id: 'all', label: `All locations (${facilities.length})` },
+                  { id: 'pending', label: 'Needs review' },
+                  { id: 'approved', label: 'Ready & active' },
+                ] as const
+              ).map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setSpaceFilter(f.id)}
+                  className={`rounded-xl px-3 py-2 button-xsm ${
+                    spaceFilter === f.id
+                      ? 'bg-[#111827] text-white'
+                      : 'border border-black/[0.08] bg-[#F8F7F4] text-[#374151]'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={spaceSearch}
+              onChange={(e) => setSpaceSearch(e.target.value)}
+              placeholder="Search site, zone, or provider..."
+              className="w-full sm:w-64 rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 caption-2 text-[#111827]"
+            />
+          </section>
+
           {spaceCheckFeedback && (
             <section className="rounded-2xl border border-black/[0.1] bg-white p-6">
               <div className="flex items-center justify-between gap-2">
                 <div className="title-4 text-[#111827]">
-                  Space Publication Gate Verification ({spaceCheckFeedback.spaceId})
+                  Approval checklist for {spaceCheckFeedback.spaceId}
                 </div>
                 <button
                   type="button"
                   onClick={() => setSpaceCheckFeedback(null)}
-                  className="button-xsm text-[#4B5563] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:text-[#111827]"
+                  className="button-xsm text-[#4B5563] hover:text-[#111827]"
                 >
-                  Dismiss
+                  Close
                 </button>
               </div>
               {spaceCheckFeedback.error && (
@@ -679,7 +1288,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
           )}
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {facilities.map((fac) => {
+            {filteredFacilities.map((fac) => {
               const facSpaces = spaces.filter((s) => s.facilityId === fac.id);
               const facProvider = providers.find((p) => p.id === fac.providerId);
               const chk = getFacCheckState(fac);
@@ -690,42 +1299,39 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-4"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="font-mono caption-5 text-[#4B5563]">
-                        {fac.id} · Provider: {facProvider?.organizationName || fac.providerName} (
-                        {facProvider?.verificationStatus || 'UNKNOWN'})
-                      </div>
-                      <h3 className="mt-1 title-3 text-[#111827]">
-                        {fac.name}
-                      </h3>
-                      <div className="caption-5 text-[#4B5563]">
-                        {fac.entranceLabel} · {fac.address}
+                    <div className="min-w-0">
+                      <h3 className="title-3 text-[#111827]">{fac.name}</h3>
+                      <div className="mt-1 caption-5 text-[#4B5563]">{fac.address}</div>
+                      <div className="mt-1 caption-5 text-[#6B7280]">
+                        Provider: {facProvider?.organizationName || fac.providerName}
                       </div>
                     </div>
                     <span
-                      className={`font-mono caption-3 uppercase ${
-                        fac.operationalChecksPassed ? 'text-[#047857]' : 'text-[#C83709]'
+                      className={`shrink-0 rounded-lg border px-2.5 py-1 caption-4 ${
+                        fac.operationalChecksPassed
+                          ? 'border-emerald-200 bg-emerald-50 text-[#047857]'
+                          : 'border-amber-200 bg-amber-50 text-[#C83709]'
                       }`}
                     >
-                      {fac.operationalChecksPassed ? 'OPS PASSED' : 'OPS PENDING'}
+                      {fac.operationalChecksPassed ? 'Site verified' : 'Checks needed'}
                     </span>
                   </div>
 
-                  {/* Operational Checklist */}
+                  {/* Site Verification Checklist */}
                   <div className="rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-4 caption-5">
-                    <div className="mb-2 caption-3 text-[#111827]">
-                      Step 4: Facility Operational Readiness Check
+                    <div className="mb-2 title-5 text-[#111827]">
+                      Site readiness checklist
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {(
                         [
-                          { key: 'entranceVerified', label: 'Entrance & Gate' },
-                          { key: 'locationVerified', label: 'GPS Pin Accurate' },
-                          { key: 'dimensionsVerified', label: 'Slot Dimensions' },
-                          { key: 'operatingHoursVerified', label: 'Operating Hours' },
-                          { key: 'restrictionsVerified', label: 'Restrictions Listed' },
-                          { key: 'accessArrangementsVerified', label: 'Access Control' },
-                          { key: 'propertyEligibleForUse', label: 'Property Eligible' },
+                          { key: 'entranceVerified', label: 'Clear entrance gate' },
+                          { key: 'locationVerified', label: 'Accurate map pin' },
+                          { key: 'dimensionsVerified', label: 'Bay size verified' },
+                          { key: 'operatingHoursVerified', label: 'Hours confirmed' },
+                          { key: 'restrictionsVerified', label: 'Rules listed' },
+                          { key: 'accessArrangementsVerified', label: 'Entry access ready' },
+                          { key: 'propertyEligibleForUse', label: 'Approved for parking' },
                         ] as const
                       ).map((item) => (
                         <label key={item.key} className="flex items-center gap-2 text-[#374151]">
@@ -746,7 +1352,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                         type="text"
                         value={chk.notes}
                         onChange={(e) => setFacCheckField(fac, { notes: e.target.value })}
-                        placeholder="Field inspector verification note"
+                        placeholder="Add inspection note..."
                         className="min-w-0 flex-1 rounded-lg border border-black/[0.1] bg-white px-3 py-2 caption-5"
                       />
                       <button
@@ -767,34 +1373,32 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                         }
                         className="whitespace-nowrap shrink-0 rounded-lg bg-[#111827] px-3 py-2 button-xsm text-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-black active:scale-[0.98]"
                       >
-                        Save Ops Check
+                        Save checklist
                       </button>
                     </div>
                   </div>
 
-                  {/* Step 5: Space Publication Approval Gate */}
+                  {/* Spaces in this facility */}
                   <div className="space-y-2">
                     {facSpaces.map((sp) => (
                       <div
                         key={sp.id}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-black/[0.06] bg-[#FAF9F6] px-3 py-2 caption-5"
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-black/[0.06] bg-[#FAF9F6] px-3 py-2.5"
                       >
                         <div>
-                          <span className="font-mono caption-3 text-[#111827]">{sp.spaceCode}</span>
-                          <span className="mx-2 text-[#D1D5DB]">·</span>
-                          <span className="font-mono tabular-nums text-[#374151]">
-                            ₹{sp.hourlyPriceInr}/hr
-                          </span>
-                          <span className="mx-2 text-[#D1D5DB]">·</span>
-                          <span
-                            className={`font-mono caption-3 uppercase ${
-                              sp.publicationStatus === 'approved'
-                                ? 'text-[#047857]'
-                                : 'text-[#C83709]'
-                            }`}
-                          >
-                            {sp.publicationStatus}
-                          </span>
+                          <div className="title-5 text-[#111827]">{sp.spaceCode}</div>
+                          <div className="caption-5 text-[#4B5563]">
+                            ₹{sp.hourlyPriceInr}/hr ·{' '}
+                            <span
+                              className={
+                                sp.publicationStatus === 'approved'
+                                  ? 'text-[#047857]'
+                                  : 'text-[#C83709]'
+                              }
+                            >
+                              {sp.publicationStatus === 'approved' ? 'Published' : 'Pending approval'}
+                            </span>
+                          </div>
                         </div>
                         <button
                           type="button"
@@ -810,9 +1414,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                         >
                           <SealCheck className="h-3.5 w-3.5" weight="bold" />
                           <span>
-                            {sp.publicationStatus === 'approved'
-                              ? 'Verify 6 checks again'
-                              : 'Approve Space Publication'}
+                            {sp.publicationStatus === 'approved' ? 'Reverify' : 'Approve space'}
                           </span>
                         </button>
                       </div>
@@ -826,96 +1428,105 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       )}
 
       {/* ================================================================= */}
-      {/* TAB 3: PAYMENTS, WEBHOOKS, DISPUTES & HOST SETTLEMENTS */}
+      {/* TAB 3: PAYMENTS, DISPUTES & HOST PAYOUTS */}
       {/* ================================================================= */}
       {subTab === 'payments' && (
         <div className="space-y-6">
           {/* Disputes & Refund Management */}
           <section className="rounded-2xl border border-black/[0.08] bg-white p-6">
             <h2 className="title-2 text-[#111827]">
-              Refund &amp; Dispute Resolution ({disputes.length})
+              Disputes and refunds ({disputes.length})
             </h2>
-            <div className="mt-3 space-y-2">
-              {disputes.map((dsp) => (
-                <div
-                  key={dsp.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-3 caption-5"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="font-mono caption-3 text-[#111827]">
-                      {dsp.id} · Booking {dsp.bookingId} · ₹{dsp.requestedRefundInr} ·{' '}
-                      <span className="uppercase text-[#4338CA]">{dsp.status}</span>
+            {disputes.length === 0 ? (
+              <p className="mt-2 caption-2 text-[#4B5563]">
+                No open disputes right now.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {disputes.map((dsp) => (
+                  <div
+                    key={dsp.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-4"
+                  >
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="title-5 text-[#111827]">Booking {dsp.bookingId}</span>
+                        <span className="font-mono caption-4 text-[#047857]">
+                          {formatInr(dsp.requestedRefundInr)}
+                        </span>
+                        <span className="caption-4 uppercase text-[#4338CA]">
+                          {dsp.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="caption-5 text-[#374151]">
+                        {dsp.raisedBy}: {dsp.reason}
+                      </div>
+                      {dsp.adminNote && (
+                        <div className="caption-5 text-[#047857]">Decision note: {dsp.adminNote}</div>
+                      )}
                     </div>
-                    <div className="mt-1 text-[#374151]">
-                      Raised by {dsp.raisedBy}: {dsp.reason}
-                    </div>
-                    {dsp.adminNote && (
-                      <div className="mt-1 caption-5 text-[#047857]">Note: {dsp.adminNote}</div>
+                    {(dsp.status === 'open' || dsp.status === 'under_review') && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          type="text"
+                          value={noteMap[dsp.id] || ''}
+                          onChange={(e) =>
+                            setNoteMap((prev) => ({ ...prev, [dsp.id]: e.target.value }))
+                          }
+                          placeholder="Add resolution note..."
+                          className="rounded-lg border border-black/[0.1] bg-white px-3 py-2 caption-5"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void onAdminResolveDispute(
+                              dsp.id,
+                              'refunded',
+                              noteMap[dsp.id] || 'Refund approved after review'
+                            )
+                          }
+                          className="whitespace-nowrap shrink-0 rounded-lg bg-[#047857] px-3 py-2 button-xsm text-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#065F46] active:scale-[0.98]"
+                        >
+                          Approve refund
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void onAdminResolveDispute(
+                              dsp.id,
+                              'dismissed',
+                              noteMap[dsp.id] || 'Dispute closed after review'
+                            )
+                          }
+                          className="whitespace-nowrap shrink-0 rounded-lg border border-black/[0.1] bg-white px-3 py-2 button-xsm text-[#374151]"
+                        >
+                          Close
+                        </button>
+                      </div>
                     )}
                   </div>
-                  {(dsp.status === 'open' || dsp.status === 'under_review') && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input
-                        type="text"
-                        value={noteMap[dsp.id] || ''}
-                        onChange={(e) =>
-                          setNoteMap((prev) => ({ ...prev, [dsp.id]: e.target.value }))
-                        }
-                        placeholder="Resolution note..."
-                        className="rounded-lg border border-black/[0.1] bg-white px-3 py-2 caption-5"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void onAdminResolveDispute(
-                            dsp.id,
-                            'refunded',
-                            noteMap[dsp.id] || 'Refund approved by admin review'
-                          )
-                        }
-                        className="whitespace-nowrap shrink-0 rounded-lg bg-[#047857] px-3 py-2 button-xsm text-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#065F46] active:scale-[0.98]"
-                      >
-                        Issue Refund
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void onAdminResolveDispute(
-                            dsp.id,
-                            'dismissed',
-                            noteMap[dsp.id] || 'Dispute dismissed after verification'
-                          )
-                        }
-                        className="whitespace-nowrap shrink-0 rounded-lg border border-black/[0.1] bg-white px-3 py-2 button-xsm text-[#374151]"
-                      >
-                        Dismiss
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* Host Settlements */}
+            {/* Host Payouts */}
             <section className="rounded-2xl border border-black/[0.08] bg-white p-6">
               <h2 className="title-3 text-[#111827]">
-                Host Settlement Records ({settlements.length})
+                Provider payouts ({settlements.length})
               </h2>
               <div className="mt-3 space-y-2">
                 {settlements.map((stl) => (
                   <div
                     key={stl.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-3 caption-5"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-3"
                   >
                     <div>
-                      <div className="caption-3 text-[#111827]">
-                        {stl.providerName} · {stl.facilityName}
-                      </div>
-                      <div className="font-mono caption-5 text-[#4B5563]">
-                        {stl.bookingId} · Net ₹{stl.netPayoutInr} (Gross ₹{stl.grossInr}) ·{' '}
-                        {stl.status}
+                      <div className="title-5 text-[#111827]">{stl.providerName}</div>
+                      <div className="caption-5 text-[#4B5563]">{stl.facilityName}</div>
+                      <div className="mt-0.5 font-mono caption-5 text-[#6B7280]">
+                        Payout {formatInr(stl.netPayoutInr)} · {stl.status.replace('_', ' ')}
                       </div>
                     </div>
                     {stl.status === 'scheduled' || stl.status === 'pending_checkout' ? (
@@ -924,11 +1535,11 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                         onClick={() => void onAdminSettlePayout(stl.id)}
                         className="whitespace-nowrap shrink-0 rounded-lg bg-[#4338CA] px-3 py-2 button-xsm text-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-[#3730A3] active:scale-[0.98]"
                       >
-                        Settle Payout
+                        Send payout
                       </button>
                     ) : (
-                      <span className="font-mono caption-3 text-[#047857]">
-                        {stl.utrRef || stl.status}
+                      <span className="font-mono caption-4 text-[#047857]">
+                        {stl.utrRef || 'Paid'}
                       </span>
                     )}
                   </div>
@@ -936,42 +1547,42 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               </div>
             </section>
 
-            {/* Idempotent Webhook Events & Payment Orders */}
+            {/* Payment Events Log */}
             <section className="rounded-2xl border border-black/[0.08] bg-white p-6 space-y-3">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-[#4338CA]" weight="bold" />
                 <h2 className="title-3 text-[#111827]">
-                  Payment Orders &amp; Webhook Idempotency Log
+                  Payment activity log
                 </h2>
               </div>
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                 {webhookEvents.map((ev) => (
                   <div
                     key={ev.eventId}
-                    className="flex items-center justify-between gap-2 rounded-xl border border-black/[0.06] bg-[#F8F7F4] px-3 py-2 caption-5"
+                    className="flex items-center justify-between gap-2 rounded-xl border border-black/[0.06] bg-[#F8F7F4] px-3 py-2"
                   >
                     <div className="min-w-0">
-                      <div className="truncate font-mono caption-3 text-[#111827]">
-                        {ev.eventId} · {ev.eventType}
+                      <div className="truncate title-5 text-[#111827]">
+                        Booking {ev.bookingId}
                       </div>
                       <div className="caption-5 text-[#4B5563]">
-                        Order {ev.orderId} · Booking {ev.bookingId} · HMAC{' '}
-                        {ev.signatureVerified ? 'Verified' : 'Rejected'}
+                        {ev.eventType.replace('.', ' ')} ·{' '}
+                        {ev.signatureVerified ? 'Signature verified' : 'Rejected'}
                       </div>
                     </div>
-                    <div className="shrink-0 text-right font-mono caption-5 tabular-nums">
-                      <div className="caption-3 text-[#047857]">₹{ev.amountInr}</div>
-                      <div className="text-[#4B5563]">
+                    <div className="shrink-0 text-right font-mono tabular-nums">
+                      <div className="caption-3 text-[#047857]">{formatInr(ev.amountInr)}</div>
+                      <div className="caption-5 text-[#6B7280]">
                         {ev.duplicateIgnoredCount > 0
-                          ? `${ev.duplicateIgnoredCount} dup ignored`
-                          : '1x processed'}
+                          ? `${ev.duplicateIgnoredCount} duplicate blocked`
+                          : 'Processed'}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
               <div className="rounded-xl border border-black/[0.06] bg-[#FAF9F6] p-3 caption-5 text-[#4B5563]">
-                Server Orders: {paymentOrders.length} · Refunds Processed: {refunds.length} · Total Bookings Tracked: {bookings.length}
+                {paymentOrders.length} payment orders · {refunds.length} refunds · {bookings.length} total bookings
               </div>
             </section>
           </div>
@@ -979,77 +1590,71 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       )}
 
       {/* ================================================================= */}
-      {/* TAB 4: PLATFORM ANALYTICS, INCIDENTS, REPORTS & AUDIT LOGS */}
+      {/* TAB 4: OPERATIONS, SAFETY & AUDIT LOGS */}
       {/* ================================================================= */}
       {subTab === 'ops' && (
         <div className="space-y-6">
-          {/* Platform Analytics */}
+          {/* Quick Operations Summary */}
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-2xl border border-black/[0.08] bg-white p-4">
-              <div className="caption-4 text-[#4B5563]">Platform GMV</div>
+              <div className="caption-4 text-[#4B5563]">Total booking value</div>
               <div className="mt-1 font-mono heading-5 tabular-nums text-[#111827]">
-                ₹{analytics.totalGmvInr}
+                {formatInr(analytics.totalGmvInr)}
               </div>
               <div className="mt-1 caption-5 text-[#047857]">
-                Fee Revenue ₹{analytics.platformRevenueInr}
+                Fees {formatInr(analytics.platformRevenueInr)}
               </div>
             </div>
             <div className="rounded-2xl border border-black/[0.08] bg-white p-4">
-              <div className="caption-4 text-[#4B5563]">Verified Supply</div>
+              <div className="caption-4 text-[#4B5563]">Active parking bays</div>
               <div className="mt-1 font-mono heading-5 tabular-nums text-[#047857]">
-                {analytics.approvedSpaces} bays
+                {analytics.approvedSpaces}
               </div>
               <div className="mt-1 caption-5 text-[#4B5563]">
-                {analytics.approvedProviders} approved · {analytics.pendingProviders} pending providers
+                {analytics.approvedProviders} verified providers
               </div>
             </div>
             <div className="rounded-2xl border border-black/[0.08] bg-white p-4">
-              <div className="caption-4 text-[#4B5563]">Webhook Replay Guard</div>
+              <div className="caption-4 text-[#4B5563]">Duplicate payments blocked</div>
               <div className="mt-1 font-mono heading-5 tabular-nums text-[#4338CA]">
                 {analytics.duplicateWebhooksBlocked}
               </div>
               <div className="mt-1 caption-5 text-[#4B5563]">
-                Duplicate events blocked safely
+                Automatic replay protection
               </div>
             </div>
             <div className="rounded-2xl border border-black/[0.08] bg-white p-4">
-              <div className="caption-4 text-[#4B5563]">Trust &amp; Safety Queue</div>
+              <div className="caption-4 text-[#4B5563]">Open issues</div>
               <div className="mt-1 font-mono heading-5 tabular-nums text-[#C83709]">
                 {analytics.openIncidents + analytics.openDisputes}
               </div>
               <div className="mt-1 caption-5 text-[#4B5563]">
-                {analytics.expiringProviders} expiring provider(s)
+                {analytics.expiringProviders} expiring license(s)
               </div>
             </div>
           </section>
 
-          {/* Autonomous Occupancy, Driver Protection & Wallet Restrictions */}
+          {/* Live Space Status, Driver Wallets & Automated Events */}
           <section className="rounded-2xl border border-black/[0.08] bg-white p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Robot className="h-4 w-4 text-[#4338CA]" weight="bold" />
-                <h2 className="title-3 text-[#111827]">
-                  Autonomous Occupancy, Driver Protection &amp; Wallet Restrictions
-                </h2>
-              </div>
-              <span className="font-mono caption-5 text-[#4B5563] tabular-nums">
+              <h2 className="title-3 text-[#111827]">
+                Live bay status and driver wallets
+              </h2>
+              <span className="caption-5 text-[#4B5563]">
                 {spaces.filter((s) => s.occupancyState && s.occupancyState !== 'AVAILABLE').length}{' '}
-                unavailable bay(s) · {wallets.filter((w) => w.bookingRestricted).length}{' '}
-                restricted wallet(s)
+                busy bays · {wallets.filter((w) => w.bookingRestricted).length} restricted wallets
               </span>
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
               {/* Live Bay Occupancy States */}
               <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-4">
-                <div className="caption-3 uppercase tracking-wide text-[#374151]">
-                  Live Bay Occupancy States
-                </div>
+                <div className="title-5 text-[#111827]">Occupied or reserved bays</div>
                 <div className="mt-3 max-h-56 space-y-2 overflow-y-auto pr-1 caption-5">
                   {spaces.filter((s) => s.occupancyState && s.occupancyState !== 'AVAILABLE')
                     .length === 0 ? (
                     <div className="rounded-lg border border-black/[0.05] bg-white p-3 text-[#4B5563]">
-                      All approved bays are currently AVAILABLE with confirmed vacancy.
+                      All approved spaces are open right now.
                     </div>
                   ) : (
                     spaces
@@ -1064,17 +1669,12 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                             className="rounded-lg border border-black/[0.06] bg-white p-3"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className="font-mono caption-3 text-[#111827]">
-                                {space.spaceCode}
-                              </span>
-                              <span className="font-mono caption-3 uppercase text-[#C83709]">
+                              <span className="title-5 text-[#111827]">{space.spaceCode}</span>
+                              <span className="font-mono caption-4 uppercase text-[#C83709]">
                                 {space.occupancyState}
                               </span>
                             </div>
-                            <div className="mt-1 caption-5 text-[#4B5563]">
-                              {facName}
-                              {space.lastOccupancyEvent ? ` · ${space.lastOccupancyEvent}` : ''}
-                            </div>
+                            <div className="mt-1 caption-5 text-[#4B5563]">{facName}</div>
                           </div>
                         );
                       })
@@ -1082,16 +1682,16 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 </div>
               </div>
 
-              {/* Driver Prepaid Wallets & Restrictions */}
+              {/* Driver Prepaid Wallets */}
               <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-4">
-                <div className="flex items-center gap-2 caption-3 uppercase tracking-wide text-[#374151]">
+                <div className="flex items-center gap-2 title-5 text-[#111827]">
                   <Wallet className="h-4 w-4 text-[#047857]" weight="bold" />
-                  <span>Prepaid Wallets &amp; Booking Holds</span>
+                  <span>Driver wallets</span>
                 </div>
                 <div className="mt-3 max-h-56 space-y-2 overflow-y-auto pr-1 caption-5">
                   {wallets.length === 0 ? (
                     <div className="rounded-lg border border-black/[0.05] bg-white p-3 text-[#4B5563]">
-                      No driver wallets provisioned yet.
+                      No driver wallets created yet.
                     </div>
                   ) : (
                     wallets.map((w) => (
@@ -1104,24 +1704,20 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="caption-3 text-[#111827]">{w.driverName}</span>
+                          <span className="title-5 text-[#111827]">{w.driverName}</span>
                           <span
                             className={`font-mono caption-3 tabular-nums ${
                               w.bookingRestricted ? 'text-rose-700' : 'text-[#047857]'
                             }`}
                           >
-                            Bal ₹{w.balanceInr}
+                            {formatInr(w.balanceInr)}
                           </span>
                         </div>
                         <div className="mt-1 flex items-center justify-between gap-2 caption-5 text-[#4B5563] tabular-nums">
-                          <span>Unpaid due: ₹{w.unpaidDueInr}</span>
-                          {w.bookingRestricted ? (
-                            <span className="font-mono caption-3 uppercase text-rose-700">
-                              BOOKING RESTRICTED
-                            </span>
-                          ) : (
-                            <span className="font-mono text-[#047857]">Active</span>
-                          )}
+                          <span>Due: {formatInr(w.unpaidDueInr)}</span>
+                          <span className={w.bookingRestricted ? 'text-rose-700' : 'text-[#047857]'}>
+                            {w.bookingRestricted ? 'Restricted' : 'Active'}
+                          </span>
                         </div>
                       </div>
                     ))
@@ -1129,15 +1725,15 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 </div>
               </div>
 
-              {/* Recent Autonomous Lifecycle Agent Decisions */}
+              {/* Automated Bay Events */}
               <div className="rounded-xl border border-black/[0.07] bg-[#F8F7F4] p-4">
-                <div className="caption-3 uppercase tracking-wide text-[#374151]">
-                  Autonomous Agent Lifecycle Log ({lifecycleEvents.length})
+                <div className="title-5 text-[#111827]">
+                  Automated updates ({lifecycleEvents.length})
                 </div>
                 <div className="mt-3 max-h-56 space-y-2 overflow-y-auto pr-1 caption-5">
                   {lifecycleEvents.length === 0 ? (
                     <div className="rounded-lg border border-black/[0.05] bg-white p-3 text-[#4B5563]">
-                      No autonomous overstay or clearance cycles triggered yet.
+                      No recent checkouts or overstays recorded.
                     </div>
                   ) : (
                     lifecycleEvents.slice(0, 8).map((ev) => (
@@ -1145,15 +1741,13 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                         key={ev.id}
                         className="rounded-lg border border-black/[0.06] bg-white p-3"
                       >
-                        <div className="flex items-center justify-between gap-2 font-mono caption-5">
-                          <span className="caption-3 text-[#4338CA]">
-                            {ev.spaceCode} · {ev.resultingOccupancyState}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="title-5 text-[#4338CA]">{ev.spaceCode}</span>
+                          <span className="caption-5 text-[#6B7280]">
+                            {ev.resultingOccupancyState}
                           </span>
-                          <span className="text-[#6B7280]">{ev.trigger}</span>
                         </div>
-                        <div className="mt-1 caption-5 text-[#374151]">
-                          {ev.outcomeSummary}
-                        </div>
+                        <div className="mt-1 caption-5 text-[#374151]">{ev.outcomeSummary}</div>
                       </div>
                     ))
                   )}
@@ -1168,33 +1762,33 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               <div className="flex items-center gap-2">
                 <Warning className="h-4 w-4 text-[#C83709]" weight="bold" />
                 <h2 className="title-3 text-[#111827]">
-                  Incident Management ({incidents.length})
+                  Safety incidents ({incidents.length})
                 </h2>
               </div>
               <div className="mt-3 space-y-2">
                 {incidents.map((inc) => (
                   <div
                     key={inc.id}
-                    className="rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-3 caption-5"
+                    className="rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-4"
                   >
-                    <div className="flex items-center justify-between font-mono caption-3">
-                      <span>
-                        {inc.id} · {inc.category} ({inc.severity})
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="title-5 text-[#111827]">
+                        {inc.category.replace('_', ' ')} ({inc.severity})
                       </span>
-                      <span className="uppercase text-[#4338CA]">{inc.status}</span>
+                      <span className="caption-4 uppercase text-[#4338CA]">{inc.status}</span>
                     </div>
-                    <div className="mt-1 text-[#374151]">
-                      {inc.reporterName} ({inc.reporterRole}): {inc.description}
+                    <div className="mt-1 caption-5 text-[#374151]">
+                      {inc.reporterName}: {inc.description}
                     </div>
                     {inc.status !== 'resolved' && (
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <input
                           type="text"
                           value={noteMap[inc.id] || ''}
                           onChange={(e) =>
                             setNoteMap((prev) => ({ ...prev, [inc.id]: e.target.value }))
                           }
-                          placeholder="Ops resolution note..."
+                          placeholder="Add resolution note..."
                           className="min-w-0 flex-1 rounded-lg border border-black/[0.1] bg-white px-3 py-2 caption-5"
                         />
                         <button
@@ -1203,7 +1797,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                             void onAdminUpdateIncident(
                               inc.id,
                               'investigating',
-                              noteMap[inc.id] || 'Assigned to field ops'
+                              noteMap[inc.id] || 'Assigned to field team'
                             )
                           }
                           className="rounded-lg border border-black/[0.1] bg-white px-3 py-2 button-xsm transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98]"
@@ -1216,7 +1810,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                             void onAdminUpdateIncident(
                               inc.id,
                               'resolved',
-                              noteMap[inc.id] || 'Resolved by ops'
+                              noteMap[inc.id] || 'Resolved by operations'
                             )
                           }
                           className="rounded-lg bg-[#047857] px-3 py-2 button-xsm text-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98]"
@@ -1235,100 +1829,105 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               <div className="flex items-center gap-2">
                 <ShieldWarning className="h-4 w-4 text-rose-700" weight="bold" />
                 <h2 className="title-3 text-[#111827]">
-                  User Reports &amp; Moderation ({userReports.length})
+                  User reports ({userReports.length})
                 </h2>
               </div>
-              <div className="mt-3 space-y-2">
-                {userReports.map((rep) => (
-                  <div
-                    key={rep.id}
-                    className="rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-3 caption-5"
-                  >
-                    <div className="flex items-center justify-between font-mono caption-3">
-                      <span>
-                        {rep.id} · Target: {rep.reportedEntity}
-                      </span>
-                      <span className="uppercase text-[#C83709]">{rep.status}</span>
-                    </div>
-                    <div className="mt-1 text-[#374151]">
-                      Reporter {rep.reporterName}: {rep.reason}
-                    </div>
-                    {rep.status === 'open' && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void onAdminModerateReport(
-                              rep.id,
-                              'warned',
-                              'Formal warning issued'
-                            )
-                          }
-                          className="rounded-lg border border-black/[0.1] bg-white px-3 py-2 button-xsm transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98]"
-                        >
-                          Warn
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void onAdminModerateReport(
-                              rep.id,
-                              'suspended',
-                              'Account suspended pending compliance review'
-                            )
-                          }
-                          className="rounded-lg bg-rose-700 px-3 py-2 button-xsm text-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98]"
-                        >
-                          Suspend
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void onAdminModerateReport(rep.id, 'dismissed', 'No policy breach')
-                          }
-                          className="rounded-lg bg-[#111827] px-3 py-2 button-xsm text-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.98]"
-                        >
-                          Dismiss
-                        </button>
+              {userReports.length === 0 ? (
+                <p className="mt-3 caption-2 text-[#4B5563]">
+                  No user reports waiting for action.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {userReports.map((rep) => (
+                    <div
+                      key={rep.id}
+                      className="rounded-xl border border-black/[0.06] bg-[#F8F7F4] p-4"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="title-5 text-[#111827]">{rep.reportedEntity}</span>
+                        <span className="caption-4 uppercase text-[#C83709]">{rep.status}</span>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                      <div className="mt-1 caption-5 text-[#374151]">
+                        {rep.reporterName}: {rep.reason}
+                      </div>
+                      {rep.status === 'open' && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void onAdminModerateReport(
+                                rep.id,
+                                'warned',
+                                'Warning sent to user'
+                              )
+                            }
+                            className="rounded-lg border border-black/[0.1] bg-white px-3 py-2 button-xsm active:scale-[0.98]"
+                          >
+                            Warn
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void onAdminModerateReport(
+                                rep.id,
+                                'suspended',
+                                'Account suspended pending review'
+                              )
+                            }
+                            className="rounded-lg bg-rose-700 px-3 py-2 button-xsm text-white active:scale-[0.98]"
+                          >
+                            Suspend
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void onAdminModerateReport(rep.id, 'dismissed', 'No issue found')
+                            }
+                            className="rounded-lg bg-[#111827] px-3 py-2 button-xsm text-white active:scale-[0.98]"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           </div>
 
-          {/* Audit Log Review */}
+          {/* Activity Log */}
           <section className="rounded-2xl border border-black/[0.08] bg-white p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <Pulse className="h-4 w-4 text-[#4338CA]" weight="bold" />
+                <FileText className="h-4 w-4 text-[#4338CA]" weight="bold" />
                 <h2 className="title-3 text-[#111827]">
-                  Immutable Audit Log ({filteredAudits.length})
+                  Platform activity log ({filteredAudits.length})
                 </h2>
               </div>
               <input
                 type="text"
                 value={auditFilter}
                 onChange={(e) => setAuditFilter(e.target.value)}
-                placeholder="Filter by actor, action, or detail..."
+                placeholder="Search log..."
                 className="w-64 rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 caption-5"
               />
             </div>
-            <div className="mt-3 max-h-72 space-y-2 overflow-y-auto font-mono caption-5">
+            <div className="mt-3 max-h-72 space-y-2 overflow-y-auto">
               {filteredAudits.map((log) => (
                 <div
                   key={log.id}
                   className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg bg-[#F8F7F4] px-3 py-2 text-[#111827]"
                 >
-                  <div>
-                    <span className="caption-3 text-[#4338CA]">{log.action}</span>
+                  <div className="min-w-0">
+                    <span className="title-5 text-[#4338CA]">
+                      {log.action.replace(/_/g, ' ')}
+                    </span>
                     <span className="mx-2 text-[#9CA3AF]">·</span>
-                    <span className="font-semibold">{log.actor}</span>
-                    <span className="mx-2 text-[#9CA3AF]">·</span>
-                    <span className="text-[#374151]">{log.detail}</span>
+                    <span className="caption-3">{log.actor}</span>
+                    <div className="mt-0.5 caption-5 text-[#4B5563]">{log.detail}</div>
                   </div>
-                  <span className="caption-5 text-[#6B7280]">
+                  <span className="shrink-0 font-mono caption-5 text-[#6B7280]">
                     {new Date(log.timestamp).toLocaleTimeString()}
                   </span>
                 </div>

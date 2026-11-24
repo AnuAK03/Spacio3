@@ -1,11 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bicycle,
   Car,
   CheckCircle,
+  DotsThreeVertical,
+  Gear,
   Lightning,
   Plus,
+  SignOut,
   Trash,
+  X,
 } from '@phosphor-icons/react';
 import {
   DriverProfile,
@@ -46,6 +50,7 @@ interface DriverProfileViewProps {
   onSaveProfile: (payload: DriverProfilePayload) => Promise<void>;
   onAddVehicle: (payload: NewDriverVehiclePayload) => Promise<void>;
   onDeleteVehicle: (vehicleId: string) => Promise<void>;
+  onLogout: () => void;
 }
 
 function extractVehicleModel(v: VehicleProfile): string {
@@ -65,6 +70,7 @@ export const DriverProfileView: React.FC<DriverProfileViewProps> = ({
   onSaveProfile,
   onAddVehicle,
   onDeleteVehicle,
+  onLogout,
 }) => {
   // Driver license & contact form state
   const [fullName, setFullName] = useState(existingProfile?.fullName || user.name);
@@ -103,6 +109,87 @@ export const DriverProfileView: React.FC<DriverProfileViewProps> = ({
   const [vehicleError, setVehicleError] = useState<string | null>(null);
   const [vehicleSuccessMsg, setVehicleSuccessMsg] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Profile 3-dots options menu & Settings dialog
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const settingsStorageKey = `parkpool_driver_settings_${user.email.toLowerCase()}`;
+  const [defaultDurationHrs, setDefaultDurationHrs] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(settingsStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as { defaultDurationHrs?: number };
+        if (typeof parsed.defaultDurationHrs === 'number') return parsed.defaultDurationHrs;
+      }
+    } catch {
+      // Ignore storage error
+    }
+    return 2;
+  });
+  const [preferEvBays, setPreferEvBays] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(settingsStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as { preferEvBays?: boolean };
+        if (typeof parsed.preferEvBays === 'boolean') return parsed.preferEvBays;
+      }
+    } catch {
+      // Ignore storage error
+    }
+    return false;
+  });
+  const [reminderAlerts, setReminderAlerts] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(settingsStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as { reminderAlerts?: boolean };
+        if (typeof parsed.reminderAlerts === 'boolean') return parsed.reminderAlerts;
+      }
+    } catch {
+      // Ignore storage error
+    }
+    return true;
+  });
+  const [settingsSavedNote, setSettingsSavedNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen && !settingsOpen) return;
+    const handleOutside = (ev: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(ev.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const handleKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') {
+        setMenuOpen(false);
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [menuOpen, settingsOpen]);
+
+  const handleSaveDriverSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      localStorage.setItem(
+        settingsStorageKey,
+        JSON.stringify({
+          defaultDurationHrs,
+          preferEvBays,
+          reminderAlerts,
+        })
+      );
+      setSettingsSavedNote('Preferences saved for this device.');
+    } catch {
+      setSettingsSavedNote('Preferences updated for this session.');
+    }
+  };
 
   useEffect(() => {
     if (existingProfile) {
@@ -243,14 +330,63 @@ export const DriverProfileView: React.FC<DriverProfileViewProps> = ({
               Add your cars or scooters, pick your active ride, and keep your driving license ready for gate entry.
             </p>
           </div>
-          {myVehicles.length > 0 && (
-            <div className="rounded-xl border border-black/[0.08] bg-[#F8F7F4] px-3 py-2 caption-3 text-[#111827]">
-              <span className="tabular-nums font-semibold text-[#C83709]">
-                {myVehicles.length}
-              </span>{' '}
-              {myVehicles.length === 1 ? 'vehicle' : 'vehicles'} in garage
+          <div className="flex items-center gap-3">
+            {myVehicles.length > 0 && (
+              <div className="rounded-xl border border-black/[0.08] bg-[#F8F7F4] px-3 py-2 caption-3 text-[#111827]">
+                <span className="tabular-nums font-semibold text-[#C83709]">
+                  {myVehicles.length}
+                </span>{' '}
+                {myVehicles.length === 1 ? 'vehicle' : 'vehicles'} in garage
+              </div>
+            )}
+
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                aria-label="Profile options"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((prev) => !prev)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-black/[0.08] bg-[#F8F7F4] text-[#111827] transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:border-[#C83709] hover:bg-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C83709]"
+              >
+                <DotsThreeVertical className="h-5 w-5" weight="bold" />
+              </button>
+
+              {menuOpen && (
+                <div
+                  role="menu"
+                  aria-label="Profile actions"
+                  className="absolute right-0 top-12 z-30 w-48 rounded-xl border border-black/[0.08] bg-white p-2 shadow-lg"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setSettingsSavedNote(null);
+                      setSettingsOpen(true);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left button-xsm text-[#111827] transition-colors duration-200 hover:bg-[#F8F7F4]"
+                  >
+                    <Gear className="h-4 w-4 text-[#4B5563]" weight="bold" />
+                    <span>Settings</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onLogout();
+                    }}
+                    className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left button-xsm text-rose-700 transition-colors duration-200 hover:bg-rose-50"
+                  >
+                    <SignOut className="h-4 w-4 text-rose-600" weight="bold" />
+                    <span>Log out</span>
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </section>
 
@@ -650,6 +786,127 @@ export const DriverProfileView: React.FC<DriverProfileViewProps> = ({
           </form>
         </section>
       </div>
+
+      {settingsOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Driver settings"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-black/[0.08] bg-white p-6 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="heading-6 text-[#111827]">Account settings</h2>
+                <p className="mt-1 caption-2 text-[#4B5563]">
+                  Manage your booking preferences and alerts.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close settings"
+                onClick={() => setSettingsOpen(false)}
+                className="rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-2 text-[#4B5563] hover:text-[#111827]"
+              >
+                <X className="h-4 w-4" weight="bold" />
+              </button>
+            </div>
+
+            <div className="rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-4 space-y-1">
+              <div className="title-4 text-[#111827]">{user.name}</div>
+              <div className="caption-2 text-[#4B5563]">{user.email}</div>
+              <div className="caption-5 text-[#6B7280]">{user.organization}</div>
+            </div>
+
+            <form onSubmit={handleSaveDriverSettings} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="driver-pref-duration"
+                  className="mb-1 block title-5 text-[#374151]"
+                >
+                  Preferred booking duration
+                </label>
+                <select
+                  id="driver-pref-duration"
+                  value={defaultDurationHrs}
+                  onChange={(e) => setDefaultDurationHrs(Number(e.target.value))}
+                  className="w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 body-5 text-[#111827]"
+                >
+                  <option value={1}>1 hour</option>
+                  <option value={2}>2 hours</option>
+                  <option value={3}>3 hours</option>
+                  <option value={4}>4 hours</option>
+                </select>
+              </div>
+
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-3">
+                <div>
+                  <div className="title-5 text-[#111827]">Prioritize EV charging bays</div>
+                  <div className="caption-5 text-[#4B5563]">
+                    Highlight spaces with electric vehicle chargers first.
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={preferEvBays}
+                  onChange={(e) => setPreferEvBays(e.target.checked)}
+                  className="h-4 w-4 rounded accent-[#047857]"
+                />
+              </label>
+
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-black/[0.08] bg-[#F8F7F4] p-3">
+                <div>
+                  <div className="title-5 text-[#111827]">Booking and exit reminders</div>
+                  <div className="caption-5 text-[#4B5563]">
+                    Show arrival window and checkout alerts before time ends.
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={reminderAlerts}
+                  onChange={(e) => setReminderAlerts(e.target.checked)}
+                  className="h-4 w-4 rounded accent-[#C83709]"
+                />
+              </label>
+
+              {settingsSavedNote && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 caption-4 text-emerald-900">
+                  {settingsSavedNote}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    onLogout();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 button-xsm text-rose-700 hover:bg-rose-100"
+                >
+                  <SignOut className="h-4 w-4" weight="bold" />
+                  <span>Log out</span>
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSettingsOpen(false)}
+                    className="rounded-xl border border-black/[0.1] bg-white px-3 py-2 button-xsm text-[#374151]"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-[#111827] px-3 py-2 button-xsm text-white hover:bg-black"
+                  >
+                    Save settings
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
