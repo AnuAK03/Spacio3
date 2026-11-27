@@ -1,4 +1,4 @@
-import {
+import type {
   AdminAnalytics,
   AdminBookingTrendPoint,
   AdminRecentActivityItem,
@@ -44,8 +44,8 @@ import {
   WalletLedgerItem,
   WheelerCategory,
   WorkspaceSnapshot,
-} from '../src/types/parkpool';
-import { getAuthDirectorySummary } from './auth';
+} from '../src/types/parkpool.ts';
+import { getAuthDirectorySummary } from './auth.ts';
 import {
   signBookingQrToken,
   signFacilityGateQrToken,
@@ -53,7 +53,7 @@ import {
   verifyBookingQrToken,
   verifyFacilityGateQrToken,
   verifyWebhookSignature,
-} from './security';
+} from './security.ts';
 
 export const BENGALURU_LOCATIONS: BengaluruLocation[] = [
   { id: 'LOC-PHX', name: 'Phoenix Mall of Asia', area: 'Hebbal / Byatarayanapura', lat: 13.0766, lng: 77.5944, source: 'hub' },

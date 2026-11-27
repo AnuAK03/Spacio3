@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
@@ -8,8 +9,8 @@ import {
   askPolicyRagAssistant,
   evaluateAutonomousOverstayLifecycle,
   runSupervisedMultiAgentWorkflow,
-} from './server/agents';
-import { BENGALURU_LOCATIONS, parseTimeToMinutes, store } from './server/domain';
+} from './server/agents.ts';
+import { BENGALURU_LOCATIONS, parseTimeToMinutes, store } from './server/domain.ts';
 import {
   claimAdminPasscode,
   getAdminAuthStatus,
@@ -17,13 +18,13 @@ import {
   loginSimpleUser,
   registerSimpleUser,
   resetSimpleUserPassword,
-} from './server/auth';
+} from './server/auth.ts';
 import {
   signDocumentAccessToken,
   verifyDocumentAccessToken,
   verifySessionToken,
-} from './server/security';
-import {
+} from './server/security.ts';
+import type {
   AgentStreamEvent,
   BengaluruLocation,
   DetailedProviderType,
@@ -31,7 +32,7 @@ import {
   UserRole,
   UserSession,
   VerificationStatus,
-} from './src/types/parkpool';
+} from './src/types/parkpool.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

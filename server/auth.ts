@@ -1,13 +1,13 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { UserRole, UserSession } from '../src/types/parkpool';
+import type { UserRole, UserSession } from '../src/types/parkpool.ts';
 import {
   hashSecret,
   signSessionToken,
   verifyConstantTimeString,
   verifySecret,
-} from './security';
+} from './security.ts';
 
 interface StoredUserAccount {
   uid: string;

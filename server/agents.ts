@@ -1,4 +1,4 @@
-import {
+import type {
   AgentStageResult,
   AgentStreamEvent,
   AutonomousLifecycleEvent,
@@ -11,7 +11,7 @@ import {
   PrepaidWallet,
   SupervisorAudit,
   VehicleProfile,
-} from '../src/types/parkpool';
+} from '../src/types/parkpool.ts';
 import { GoogleGenAI } from '@google/genai';
 import {
   BENGALURU_LOCATIONS,
@@ -19,7 +19,7 @@ import {
   parseTimeToMinutes,
   POLICY_RAG_CORPUS,
   store,
-} from './domain';
+} from './domain.ts';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_OPENROUTER_MODEL = 'openrouter/auto';
@@ -147,32 +147,152 @@ async function callOpenRouter(params: {
   }
 }
 
-async function callLlmModel(params: {
+const GEMINI_MODEL = 'gemini-4-hydrogen';
+
+let cachedGeminiBlockState: {
+  apiKey: string;
+  code: number;
+  status: string;
+  message: string;
+  logged: boolean;
+} | null = null;
+
+function hasOpenRouterConfigured(): boolean {
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  return Boolean(apiKey && apiKey !== 'MY_OPENROUTER_API_KEY');
+}
+
+function parseGeminiErrorDetails(err: unknown): {
+  code: number;
+  status: string;
+  message: string;
+  retryable: boolean;
+  nonRetryableAuthOrBilling: boolean;
+} {
+  const raw = err instanceof Error ? err.message : String(err ?? '');
+  let code = typeof (err as { status?: unknown })?.status === 'number'
+    ? ((err as { status: number }).status)
+    : 0;
+  let status = '';
+  let message = raw;
+
+  const jsonStart = raw.indexOf('{');
+  if (jsonStart !== -1) {
+    try {
+      const parsed = JSON.parse(raw.slice(jsonStart)) as {
+        error?: { code?: number; status?: string; message?: string };
+      };
+      if (parsed?.error) {
+        code = parsed.error.code ?? code;
+        status = parsed.error.status ?? status;
+        message = parsed.error.message ?? message;
+      }
+    } catch {
+      // Keep raw message if JSON parsing fails
+    }
+  }
+
+  const nonRetryableAuthOrBilling =
+    code === 400 ||
+    code === 401 ||
+    code === 403 ||
+    code === 404 ||
+    status === 'PERMISSION_DENIED' ||
+    status === 'INVALID_ARGUMENT' ||
+    status === 'NOT_FOUND' ||
+    /PERMISSION_DENIED|API_KEY_INVALID|free tier is not available/i.test(raw);
+
+  const retryable =
+    !nonRetryableAuthOrBilling &&
+    (code === 429 ||
+      code === 500 ||
+      code === 502 ||
+      code === 503 ||
+      code === 504 ||
+      status === 'RESOURCE_EXHAUSTED' ||
+      status === 'UNAVAILABLE' ||
+      /timeout|ECONNRESET|ETIMEDOUT|fetch failed/i.test(raw));
+
+  return { code, status, message, retryable, nonRetryableAuthOrBilling };
+}
+
+async function callGeminiGenerateContent(params: {
   systemPrompt: string;
   userPrompt: string;
   expectJson?: boolean;
-}): Promise<{ text: string; modelUsed: string }> {
+}): Promise<{ text: string; modelUsed: string } | null> {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   const gemini = getGeminiClient();
-  if (gemini) {
+  if (!gemini || !apiKey) return null;
+
+  if (cachedGeminiBlockState && cachedGeminiBlockState.apiKey === apiKey) {
+    return null;
+  }
+
+  const delaysMs = [400, 900];
+  for (let attempt = 0; attempt <= delaysMs.length; attempt++) {
     try {
       const response = await gemini.models.generateContent({
-        model: 'gemini-4-hydrogen',
+        model: GEMINI_MODEL,
         contents: params.userPrompt,
         config: {
           systemInstruction: params.systemPrompt,
           ...(params.expectJson ? { responseMimeType: 'application/json' } : {}),
         },
       });
-      const text = response.text || '';
-      if (text.trim()) {
-        return { text: text.trim(), modelUsed: 'gemini-4-hydrogen' };
+      const text = (response.text ?? '').trim();
+      if (text) {
+        return { text, modelUsed: GEMINI_MODEL };
       }
-    } catch (gErr) {
-      console.warn('[Gemini Agent Warning] Falling back to secondary/OpenRouter LLM:', gErr);
+      return null;
+    } catch (err: unknown) {
+      const details = parseGeminiErrorDetails(err);
+      if (details.retryable && attempt < delaysMs.length) {
+        await pause(delaysMs[attempt]);
+        continue;
+      }
+      if (details.nonRetryableAuthOrBilling) {
+        if (!cachedGeminiBlockState || cachedGeminiBlockState.apiKey !== apiKey) {
+          cachedGeminiBlockState = {
+            apiKey,
+            code: details.code || 403,
+            status: details.status || 'PERMISSION_DENIED',
+            message: details.message,
+            logged: true,
+          };
+          console.info(
+            `[ParkPool AI] Gemini API unavailable (${details.code || 403} ${details.status || 'PERMISSION_DENIED'}). Check Settings > Secrets for a billing-enabled key; continuing with deterministic/secondary routing.`
+          );
+        }
+      } else {
+        console.info(
+          `[ParkPool AI] Gemini request skipped (${details.code || 'ERR'}): ${details.message}`
+        );
+      }
+      return null;
     }
   }
+  return null;
+}
 
-  return await callOpenRouter(params);
+async function callLlmModel(params: {
+  systemPrompt: string;
+  userPrompt: string;
+  expectJson?: boolean;
+}): Promise<{ text: string; modelUsed: string }> {
+  const geminiResult = await callGeminiGenerateContent(params);
+  if (geminiResult) {
+    return geminiResult;
+  }
+
+  if (hasOpenRouterConfigured()) {
+    return await callOpenRouter(params);
+  }
+
+  const reason =
+    cachedGeminiBlockState?.message ||
+    'No active LLM key configured; deterministic ParkPool engine active.';
+  throw new Error(reason);
 }
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -698,7 +818,7 @@ Return a JSON object with EXACTLY these keys:
   let pricingParsed: Record<string, unknown>;
   let s4ExecutionMode: 'openrouter_llm' | 'deterministic_service' = 'openrouter_llm';
   try {
-    const pricingTrustResult = await callOpenRouter({
+    const pricingTrustResult = await callLlmModel({
       systemPrompt:
         'You are the Pricing & Trust Auditor for ParkPool AI. Respond ONLY with a raw valid JSON object (no markdown fences, no commentary).',
       userPrompt: `Analyze these verified parking candidates and produce concise, strictly evidence-grounded pricing, walking-route, and review-trust summaries.
@@ -844,7 +964,7 @@ Policy Context Reference: ${POLICY_RAG_CORPUS.map((d) => d.id).join(', ')}`;
   let s5ModelUsed = configuredModel;
 
   try {
-    const finalAuditResult = await callOpenRouter({
+    const finalAuditResult = await callLlmModel({
       systemPrompt:
         'You are the ParkPool AI Supervisor Verification Agent. Write a concise 2-3 sentence plain-text verification summary.',
       userPrompt: supervisorSummaryPrompt,
@@ -1155,32 +1275,32 @@ export async function askDriverGenAiAgent(
     recommendedSpots = scored.slice(0, 3);
   }
 
-  // Attempt Gemini model generation first
-  const gemini = getGeminiClient();
-  if (gemini) {
-    try {
-      const liveContextPrompt = `
+  // Attempt Gemini model generation first (with circuit-breaker & retry handling)
+  const geminiChatResult = await callGeminiGenerateContent({
+    systemPrompt:
+      'You are the ParkPool Driver Assistant. You provide helpful, concise, safe, and privacy-preserving answers to drivers in Bengaluru without mentioning model names.',
+    userPrompt: `
 ParkPool AI Driver Assistant Context:
 - Requesting Driver: ${input.userName || 'Driver'} (${userEmail || 'Anonymous Session'})
 - Active Vehicle: ${activeVehicle.label} (${activeVehicle.vehicleType.toUpperCase()}, EV: ${
-        activeVehicle.isEv ? 'Yes' : 'No'
-      }, Plate: ${activeVehicle.plateNumber || 'Verified'})
+      activeVehicle.isEv ? 'Yes' : 'No'
+    }, Plate: ${activeVehicle.plateNumber || 'Verified'})
 - Driver Prepaid Wallet: ${
-        wallet
-          ? `₹${wallet.balanceInr} available`
-          : '₹500 default balance'
-      }
+      wallet
+        ? `₹${wallet.balanceInr} available`
+        : '₹500 default balance'
+    }
 - Current Active Booking: ${
-        activeBooking
-          ? `Booking ID: ${activeBooking.id}, Status: ${activeBooking.status.toUpperCase()}, Spot: ${
-              activeBooking.spaceCode
-            }, Facility: ${activeBooking.facilityName}, Spot Entrance: ${
-              activeBooking.entranceLabel
-            }, Spot Access PIN: ${activeBooking.accessCode}, Total Paid: ₹${
-              activeBooking.totalAmountInr
-            }`
-          : 'None currently active'
-      }
+      activeBooking
+        ? `Booking ID: ${activeBooking.id}, Status: ${activeBooking.status.toUpperCase()}, Spot: ${
+            activeBooking.spaceCode
+          }, Facility: ${activeBooking.facilityName}, Spot Entrance: ${
+            activeBooking.entranceLabel
+          }, Spot Access PIN: ${activeBooking.accessCode}, Total Paid: ₹${
+            activeBooking.totalAmountInr
+          }`
+        : 'None currently active'
+    }
 
 Approved Policy Knowledge Base:
 ${EXTENDED_POLICY_CORPUS.map(
@@ -1197,58 +1317,44 @@ Instructions:
 5. If asking about pricing, explain the transparent formula: Base parking rate + 10% platform service fee + 18% GST = Total Quote.
 6. Strictly uphold driver privacy: never disclose information belonging to other users.
 7. Format with clean markdown headers and bullet points.
-8. Keep answers small, direct, and helpful. Never mention underlying model names, versions, or vendor brands (such as Gemini, GPT, LLM, OpenAI, Google) or declare yourself as an AI model — simply assist directly as the ParkPool Driver Assistant.`;
+8. Keep answers small, direct, and helpful. Never mention underlying model names, versions, or vendor brands (such as Gemini, GPT, LLM, OpenAI, Google) or declare yourself as an AI model — simply assist directly as the ParkPool Driver Assistant.`,
+  });
 
-      const response = await gemini.models.generateContent({
-        model: 'gemini-4-hydrogen',
-        contents: liveContextPrompt,
-        config: {
-          systemInstruction:
-            'You are the ParkPool Driver Assistant. You provide helpful, concise, safe, and privacy-preserving answers to drivers in Bengaluru without mentioning model names.',
-        },
-      });
+  if (geminiChatResult?.text) {
+    const matchedCitations = EXTENDED_POLICY_CORPUS.filter((d) => {
+      const words = d.title.toLowerCase().split(/\s+/);
+      return words.some((w) => w.length > 3 && lowerQ.includes(w));
+    }).map((d) => ({ docId: d.id, title: d.title, section: d.section }));
 
-      const generatedText = (response.text || '').trim();
-      if (generatedText) {
-        // Collect relevant citations
-        const matchedCitations = EXTENDED_POLICY_CORPUS.filter((d) => {
-          const words = d.title.toLowerCase().split(/\s+/);
-          return words.some((w) => w.length > 3 && lowerQ.includes(w));
-        }).map((d) => ({ docId: d.id, title: d.title, section: d.section }));
-
-        return {
-          answer: generatedText,
-          citations:
-            matchedCitations.length > 0
-              ? matchedCitations.slice(0, 3)
-              : [
-                  {
-                    docId: 'DOC-CHECKIN-07',
-                    title: 'Spot Check-In, Access PIN & Backup Spot Wall Placard Protocol',
-                    section: 'Section 11.4.H',
-                  },
-                ],
-          recommendedSpots,
-          suggestedPrompts: [
-            'How do I check in to my spot?',
-            'What if I arrive late or need an extension?',
-            'Explain my wallet balance and pricing breakdown',
-          ],
-          safetyNotice: isDrivingRisk
-            ? '⚠️ Road Safety: Please safely pull over and park before checking directions or interacting with your screen.'
-            : undefined,
-          contextSummary: {
-            activeVehicle: activeVehicle.label,
-            activeBooking: activeBooking
-              ? `${activeBooking.facilityName} (Spot ${activeBooking.spaceCode})`
-              : undefined,
-            walletBalanceInr: wallet?.balanceInr,
-          },
-        };
-      }
-    } catch (gErr) {
-      console.warn('[Gemini Driver Agent Warning] Falling back to Autonomous Agent Engine:', gErr);
-    }
+    return {
+      answer: geminiChatResult.text,
+      citations:
+        matchedCitations.length > 0
+          ? matchedCitations.slice(0, 3)
+          : [
+              {
+                docId: 'DOC-CHECKIN-07',
+                title: 'Spot Check-In, Access PIN & Backup Spot Wall Placard Protocol',
+                section: 'Section 11.4.H',
+              },
+            ],
+      recommendedSpots,
+      suggestedPrompts: [
+        'How do I check in to my spot?',
+        'What if I arrive late or need an extension?',
+        'Explain my wallet balance and pricing breakdown',
+      ],
+      safetyNotice: isDrivingRisk
+        ? '⚠️ Road Safety: Please safely pull over and park before checking directions or interacting with your screen.'
+        : undefined,
+      contextSummary: {
+        activeVehicle: activeVehicle.label,
+        activeBooking: activeBooking
+          ? `${activeBooking.facilityName} (Spot ${activeBooking.spaceCode})`
+          : undefined,
+        walletBalanceInr: wallet?.balanceInr,
+      },
+    };
   }
 
   // Autonomous GenAI Driver Agent Engine (Deep semantic synthesis)
@@ -1516,7 +1622,7 @@ export async function evaluateAutonomousOverstayLifecycle(input: {
     : 'No upcoming conflict detected; safe to send driver extension offer.';
 
   try {
-    const llmOut = await callOpenRouter({
+    const llmOut = await callLlmModel({
       systemPrompt:
         'You are the ParkPool AI Pricing & Pooling Lifecycle Agent. Respond ONLY with a raw JSON object containing concise 1-sentence strings for pricingReason and protectionNote.',
       userPrompt: `Evaluate overstay lifecycle for booking ${bk.id} at ${fac.name} (${space.spaceCode}).

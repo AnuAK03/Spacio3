@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { UserRole, UserSession } from '../src/types/parkpool';
+import type { UserRole, UserSession } from '../src/types/parkpool.ts';
 
 const EPHEMERAL_DOC_SECRET = crypto.randomBytes(32).toString('hex');
 const EPHEMERAL_WEBHOOK_SECRET = crypto.randomBytes(32).toString('hex');
