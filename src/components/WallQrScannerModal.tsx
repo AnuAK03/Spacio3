@@ -191,7 +191,7 @@ export const WallQrScannerModal: React.FC<WallQrScannerModalProps> = ({
         const decoded = jsQR(imgData.data, imgData.width, imgData.height);
         if (!decoded?.data) {
           setStatusError(
-            'Could not find a valid ParkPool QR code in that photo. Try a sharper image or use the Spot Wall Placard option.'
+            'Could not find a valid Spacio QR code in that photo. Try a sharper image or use the Spot Wall Placard option.'
           );
           return;
         }
@@ -341,7 +341,7 @@ export const WallQrScannerModal: React.FC<WallQrScannerModalProps> = ({
                   Point camera at spot wall QR placard
                 </div>
                 <p className="mt-1 max-w-xs caption-4 text-[#4B5563]">
-                  Uses live device camera to verify the signed ParkPool wall placard at{' '}
+                  Uses live device camera to verify the signed Spacio wall placard at{' '}
                   {booking.entranceLabel}.
                 </p>
               </div>

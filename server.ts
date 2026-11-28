@@ -148,7 +148,7 @@ async function startServer() {
       return;
     }
     store.addAudit(
-      'ParkPool Auth',
+      'Spacio Auth',
       'USER_REGISTERED',
       `${result.user.name} (${result.user.email}) registered as ${result.user.role}.`
     );
@@ -163,7 +163,7 @@ async function startServer() {
       return;
     }
     store.addAudit(
-      'ParkPool Auth',
+      'Spacio Auth',
       'USER_AUTHENTICATED',
       `${result.user.name} (${result.user.email}) signed in as ${result.user.role}.`
     );
@@ -177,7 +177,7 @@ async function startServer() {
       res.status(result.status).json({ error: result.error });
       return;
     }
-    store.addAudit('ParkPool Auth', 'PASSWORD_RESET', `Password updated for ${String(email || '').trim().toLowerCase()}.`);
+    store.addAudit('Spacio Auth', 'PASSWORD_RESET', `Password updated for ${String(email || '').trim().toLowerCase()}.`);
     res.json({ ok: true, message: result.message });
   });
 
@@ -189,7 +189,7 @@ async function startServer() {
       return;
     }
     store.addAudit(
-      'ParkPool Auth',
+      'Spacio Auth',
       'ADMIN_PASSCODE_CLAIMED',
       `First-run administrator claimed by ${result.user.email}.`
     );
@@ -204,7 +204,7 @@ async function startServer() {
       return;
     }
     store.addAudit(
-      'ParkPool Auth',
+      'Spacio Auth',
       'ADMIN_AUTHENTICATED',
       `Administrator ${result.user.email} signed in.`
     );
@@ -248,7 +248,7 @@ async function startServer() {
 
       const apiRes = await fetch(url, {
         headers: {
-          'User-Agent': 'ParkPoolAI/1.0 (Bengaluru Shared Parking Platform)',
+          'User-Agent': 'Spacio/1.0 (Bengaluru Shared Parking Platform)',
           Accept: 'application/json',
         },
         signal: AbortSignal.timeout(3500),
@@ -1894,11 +1894,11 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`ParkPool AI server running on http://localhost:${PORT}`);
+    console.log(`Spacio server running on http://localhost:${PORT}`);
   });
 }
 
 startServer().catch((err) => {
-  console.error('Failed to start ParkPool AI server:', err);
+  console.error('Failed to start Spacio server:', err);
   process.exit(1);
 });

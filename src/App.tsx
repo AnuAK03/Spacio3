@@ -115,7 +115,7 @@ export default function App() {
   const fetchWorkspace = useCallback(async () => {
     if (!authToken || !user) return null;
     const res = await apiFetch('/api/workspace');
-    if (!res.ok) throw new Error('Failed to load ParkPool workspace');
+    if (!res.ok) throw new Error('Failed to load Spacio workspace');
     const data: WorkspaceSnapshot = await res.json();
     setSnapshot(data);
     return data;
@@ -1149,21 +1149,19 @@ export default function App() {
       </a>
 
       {gmpQuotaExceeded && (
-        <div className="mx-auto mt-3 max-w-[1360px] px-4 sm:px-6">
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 caption-1 text-center text-amber-900">
-            <span>
-              Google Maps Platform quota reached. Visit{' '}
-              <a
-                href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline font-semibold text-amber-950 hover:text-amber-800"
-              >
-                maps developer site
-              </a>{' '}
-              for instructions to update your account.
-            </span>
-          </div>
+        <div className="sticky top-0 z-50 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-center caption-4 text-amber-900 shadow-sm">
+          <span>
+            Google Maps Platform quota reached. If you are the app owner, visit{' '}
+            <a
+              href="https://developers.google.com/maps/ai/ai-studio?utm_campaign=gmp_mcp_codeassist_v1_aistudio#quota_exceeded_errors"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-semibold text-amber-950 hover:text-amber-800"
+            >
+              maps developer site
+            </a>{' '}
+            for instructions to update your account.
+          </span>
         </div>
       )}
 
@@ -1179,7 +1177,7 @@ export default function App() {
                 <MapPin className="h-4 w-4 text-[#FF8A5C]" weight="fill" />
               </div>
               <span className="heading-6 text-[#111827] whitespace-nowrap">
-                ParkPool <span className="text-[#C83709]">AI</span>
+                Spacio
               </span>
             </button>
 
@@ -1268,7 +1266,7 @@ export default function App() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#111827] text-white">
                 <MapPin className="h-4 w-4 text-[#FF8A5C]" weight="fill" />
               </div>
-              <span className="heading-6 text-[#111827]">ParkPool AI</span>
+              <span className="heading-6 text-[#111827]">Spacio</span>
             </div>
             <button
               type="button"

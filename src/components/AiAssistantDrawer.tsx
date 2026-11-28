@@ -327,7 +327,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
               >
                 <div className="flex items-center gap-2 pb-1">
                   <Robot className="h-4 w-4 text-[#4338CA]" weight="duotone" />
-                  <span className="caption-3 text-[#111827]">ParkPool Assistant</span>
+                  <span className="caption-3 text-[#111827]">Spacio Assistant</span>
                 </div>
 
                 {msg.safetyNotice && (

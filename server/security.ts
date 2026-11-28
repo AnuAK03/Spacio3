@@ -109,7 +109,7 @@ export function verifySessionToken(token: string | undefined): UserSession | nul
       name: parsed.name,
       email: parsed.email,
       role: parsed.role,
-      organization: parsed.organization || 'ParkPool AI',
+      organization: parsed.organization || 'Spacio',
       accentHex:
         parsed.accentHex ||
         (parsed.role === 'host'

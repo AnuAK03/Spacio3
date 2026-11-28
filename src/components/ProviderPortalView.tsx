@@ -536,7 +536,7 @@ export const ProviderPortalView: React.FC<ProviderPortalViewProps> = ({
   const downloadSettlementDocument = (stl: HostSettlementRecord, format: 'html' | 'txt' = 'html') => {
     const settledStr = stl.settledAt ? new Date(stl.settledAt).toLocaleString() : 'Scheduled';
     if (format === 'txt') {
-      const content = `PARKPOOL — SETTLEMENT STATEMENT
+      const content = `SPACIO — SETTLEMENT STATEMENT
 ========================================
 Settlement ID: ${stl.id}
 Provider:      ${stl.providerName}
@@ -571,7 +571,7 @@ Date:          ${settledStr}
   td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: monospace; }
   .total td { font-weight: 700; font-size: 16px; border-top: 2px solid #111827; border-bottom: none; padding-top: 14px; color: #047857; }
 </style></head><body>
-  <h1>ParkPool Settlement Statement</h1>
+  <h1>Spacio Settlement Statement</h1>
   <div class="meta">Statement ID: <strong>${stl.id}</strong> · UTR: ${stl.utrRef || 'PENDING'} · ${settledStr}</div>
   <table>
     <tr><th>Provider</th><td>${stl.providerName}</td></tr>
@@ -623,7 +623,7 @@ Date:          ${settledStr}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `parkpool_bookings_${toIsoDate(new Date())}.csv`;
+    a.download = `spacio_bookings_${toIsoDate(new Date())}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -658,7 +658,7 @@ Date:          ${settledStr}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `parkpool_settlements_${toIsoDate(new Date())}.csv`;
+    a.download = `spacio_settlements_${toIsoDate(new Date())}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

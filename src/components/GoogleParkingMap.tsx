@@ -1248,7 +1248,7 @@ export const GoogleParkingMap: React.FC<GoogleParkingMapProps> = ({
 
   const heightClass = compact
     ? 'h-[260px] sm:h-[300px]'
-    : 'h-[310px] sm:h-[380px] lg:min-h-[430px]';
+    : 'h-[320px] sm:h-[400px] lg:h-[480px]';
 
   const gmapExternalMode =
     travelMode === 'WALKING'

@@ -100,7 +100,7 @@ async function callOpenRouter(params: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': referer,
-        'X-Title': 'ParkPool AI',
+        'X-Title': 'Spacio',
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(25000),
@@ -261,12 +261,12 @@ async function callGeminiGenerateContent(params: {
             logged: true,
           };
           console.info(
-            `[ParkPool AI] Gemini API unavailable (${details.code || 403} ${details.status || 'PERMISSION_DENIED'}). Check Settings > Secrets for a billing-enabled key; continuing with deterministic/secondary routing.`
+            `[Spacio] Gemini API unavailable (${details.code || 403} ${details.status || 'PERMISSION_DENIED'}). Check Settings > Secrets for a billing-enabled key; continuing with deterministic/secondary routing.`
           );
         }
       } else {
         console.info(
-          `[ParkPool AI] Gemini request skipped (${details.code || 'ERR'}): ${details.message}`
+          `[Spacio] Gemini request skipped (${details.code || 'ERR'}): ${details.message}`
         );
       }
       return null;
@@ -291,7 +291,7 @@ async function callLlmModel(params: {
 
   const reason =
     cachedGeminiBlockState?.message ||
-    'No active LLM key configured; deterministic ParkPool engine active.';
+    'No active LLM key configured; deterministic Spacio engine active.';
   throw new Error(reason);
 }
 
@@ -820,7 +820,7 @@ Return a JSON object with EXACTLY these keys:
   try {
     const pricingTrustResult = await callLlmModel({
       systemPrompt:
-        'You are the Pricing & Trust Auditor for ParkPool AI. Respond ONLY with a raw valid JSON object (no markdown fences, no commentary).',
+        'You are the Pricing & Trust Auditor for Spacio. Respond ONLY with a raw valid JSON object (no markdown fences, no commentary).',
       userPrompt: `Analyze these verified parking candidates and produce concise, strictly evidence-grounded pricing, walking-route, and review-trust summaries.
 RULES:
 1. Quote ONLY the exact totalQuoteInr values provided in the input JSON.
@@ -943,7 +943,7 @@ ${JSON.stringify(topForAnalysis, null, 2)}`,
   const s5Start = Date.now();
   const totalCaught = stages.reduce((acc, st) => acc + st.supervisorAudit.violationsCaught.length, 0);
 
-  const supervisorSummaryPrompt = `You are the Supervisor & Verification Agent for ParkPool AI.
+  const supervisorSummaryPrompt = `You are the Supervisor & Verification Agent for Spacio.
 Audit this completed multi-agent parking coordination run and produce a crisp, authoritative 2-3 sentence verification report for the driver/operator.
 
 Workflow Run ID: ${runId}
@@ -966,7 +966,7 @@ Policy Context Reference: ${POLICY_RAG_CORPUS.map((d) => d.id).join(', ')}`;
   try {
     const finalAuditResult = await callLlmModel({
       systemPrompt:
-        'You are the ParkPool AI Supervisor Verification Agent. Write a concise 2-3 sentence plain-text verification summary.',
+        'You are the Spacio Supervisor Verification Agent. Write a concise 2-3 sentence plain-text verification summary.',
       userPrompt: supervisorSummaryPrompt,
       expectJson: false,
     });
@@ -1123,7 +1123,7 @@ export async function askDriverGenAiAgent(
   if (isPrivacyBreachAttempt) {
     return {
       answer:
-        '🔒 **Privacy & Safety Safeguard Active**\n\nParkPool AI strictly protects driver and property confidentiality. To ensure safety and security, personal contact numbers, vehicle licenses of other drivers, administrative passcodes, and private property verification documents are never disclosed.\n\nI can assist you with your own registered vehicle, your own active bookings, your prepaid wallet balance, and verified public parking spots in Bengaluru.',
+        '🔒 **Privacy & Safety Safeguard Active**\n\nSpacio strictly protects driver and property confidentiality. To ensure safety and security, personal contact numbers, vehicle licenses of other drivers, administrative passcodes, and private property verification documents are never disclosed.\n\nI can assist you with your own registered vehicle, your own active bookings, your prepaid wallet balance, and verified public parking spots in Bengaluru.',
       citations: [
         {
           docId: 'DOC-AUTH-01',
@@ -1278,9 +1278,9 @@ export async function askDriverGenAiAgent(
   // Attempt Gemini model generation first (with circuit-breaker & retry handling)
   const geminiChatResult = await callGeminiGenerateContent({
     systemPrompt:
-      'You are the ParkPool Driver Assistant. You provide helpful, concise, safe, and privacy-preserving answers to drivers in Bengaluru without mentioning model names.',
+      'You are the Spacio Driver Assistant. You provide helpful, concise, safe, and privacy-preserving answers to drivers in Bengaluru without mentioning model names.',
     userPrompt: `
-ParkPool AI Driver Assistant Context:
+Spacio Driver Assistant Context:
 - Requesting Driver: ${input.userName || 'Driver'} (${userEmail || 'Anonymous Session'})
 - Active Vehicle: ${activeVehicle.label} (${activeVehicle.vehicleType.toUpperCase()}, EV: ${
       activeVehicle.isEv ? 'Yes' : 'No'
@@ -1317,7 +1317,7 @@ Instructions:
 5. If asking about pricing, explain the transparent formula: Base parking rate + 10% platform service fee + 18% GST = Total Quote.
 6. Strictly uphold driver privacy: never disclose information belonging to other users.
 7. Format with clean markdown headers and bullet points.
-8. Keep answers small, direct, and helpful. Never mention underlying model names, versions, or vendor brands (such as Gemini, GPT, LLM, OpenAI, Google) or declare yourself as an AI model — simply assist directly as the ParkPool Driver Assistant.`,
+8. Keep answers small, direct, and helpful. Never mention underlying model names, versions, or vendor brands (such as Gemini, GPT, LLM, OpenAI, Google) or declare yourself as an AI model — simply assist directly as the Spacio Driver Assistant.`,
   });
 
   if (geminiChatResult?.text) {
@@ -1369,7 +1369,7 @@ Instructions:
     });
     answer = `### 🅿️ How to Check In to Your Reserved Spot
 
-Checking in to your ParkPool parking spot is fast, verified, and completely touchless:
+Checking in to your Spacio parking spot is fast, verified, and completely touchless:
 
 1. **Arrive at the Parking Spot Entrance**:
    Navigate to your reserved spot entrance${
@@ -1380,7 +1380,7 @@ Checking in to your ParkPool parking spot is fast, verified, and completely touc
      activeBooking ? ` (\`${activeBooking.accessCode}\`)` : ''
    } to the attendant or entry keypad.
 3. **Backup Self Check-In (No Attendant Present)**:
-   If no attendant is stationed at the entrance, tap **Scan Spot Wall QR** on your active booking card. You can use your device camera or upload a photo to scan the verified ParkPool wall placard mounted at the parking spot entrance to check in instantly!
+   If no attendant is stationed at the entrance, tap **Scan Spot Wall QR** on your active booking card. You can use your device camera or upload a photo to scan the verified Spacio wall placard mounted at the parking spot entrance to check in instantly!
 
 *Note: For security and driver privacy, QR pass screenshots are disabled. Your pass is always accessible on-demand inside Active Bookings.*`;
   } else if (/direction|where\s+is|how\s+to\s+reach|navigate|map/i.test(lowerQ)) {
@@ -1404,7 +1404,7 @@ Tap **Parking Spot Directions** on your active booking card in **Active Bookings
     } else {
       answer = `### 📍 Parking Spot Directions & Navigation
 
-ParkPool provides exact, walkway-measured directions directly to parking spot entrances rather than ambiguous center-point coordinates:
+Spacio provides exact, walkway-measured directions directly to parking spot entrances rather than ambiguous center-point coordinates:
 
 - Select your destination area on the **Find Parking** map.
 - Once you reserve a spot, tap **Get Directions on Map** or open **Active Bookings → Parking Spot Directions**.
@@ -1458,7 +1458,7 @@ Every parking reservation enforces transparent, itemized pricing calculated excl
 
 - **Free Cancellation**: Cancel up to **30 minutes before your scheduled start time** to receive a **100% full refund** credited immediately back to your Prepaid Parking Balance.
 - **Checkout Holds**: When you place a spot on hold, you have **10 minutes** to pay. If not paid, the hold expires safely with **zero charge**.
-- **Host Cancellations**: If a host makes an unexpected emergency withdrawal of a bay, ParkPool AI automatically rebooks you to a nearby verified spot for free or issues an immediate 100% refund with extra credit.`;
+- **Host Cancellations**: If a host makes an unexpected emergency withdrawal of a bay, Spacio automatically rebooks you to a nearby verified spot for free or issues an immediate 100% refund with extra credit.`;
   } else if (isSearchIntent) {
     citations.push({
       docId: 'DOC-WALK-05',
@@ -1624,7 +1624,7 @@ export async function evaluateAutonomousOverstayLifecycle(input: {
   try {
     const llmOut = await callLlmModel({
       systemPrompt:
-        'You are the ParkPool AI Pricing & Pooling Lifecycle Agent. Respond ONLY with a raw JSON object containing concise 1-sentence strings for pricingReason and protectionNote.',
+        'You are the Spacio Pricing & Pooling Lifecycle Agent. Respond ONLY with a raw JSON object containing concise 1-sentence strings for pricingReason and protectionNote.',
       userPrompt: `Evaluate overstay lifecycle for booking ${bk.id} at ${fac.name} (${space.spaceCode}).
 Scheduled End: ${formatMinutesToTime(bk.endMin)}, Requested Extra: +${extraMinutes}m (until ${formatMinutesToTime(proposedEndMin)}), Server Extension Total: ₹${additionalTotalInr}.
 Upcoming Driver B Conflict: ${conflictingNext ? `${conflictingNext.id} at ${formatMinutesToTime(conflictingNext.startMin)}` : 'None'}.

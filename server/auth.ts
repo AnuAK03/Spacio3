@@ -327,7 +327,7 @@ export function claimAdminPasscode(params: {
   const displayName =
     typeof params.displayName === 'string' && params.displayName.trim()
       ? params.displayName.trim().slice(0, 100)
-      : 'ParkPool Operations Admin';
+      : 'Spacio Operations Admin';
   const passcode = typeof params.passcode === 'string' ? params.passcode : '';
 
   if (!isValidEmail(email)) {
@@ -389,10 +389,10 @@ export function loginAdminPasscode(params: {
     const adminEmail =
       requestedEmail && isValidEmail(requestedEmail)
         ? requestedEmail
-        : authStore.adminAccount?.email || 'admin@parkpool.local';
+        : authStore.adminAccount?.email || 'admin@spacio.local';
     const user = toUserSession({
       uid: authStore.adminAccount?.uid || 'ADM-ENV-01',
-      displayName: authStore.adminAccount?.displayName || 'ParkPool Operations Admin',
+      displayName: authStore.adminAccount?.displayName || 'Spacio Operations Admin',
       email: adminEmail,
       role: 'admin',
       organization: 'Compliance & Operations Command',

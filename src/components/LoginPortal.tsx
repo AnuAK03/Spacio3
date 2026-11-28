@@ -119,11 +119,11 @@ const HOW_STEPS = [
 const FAQ_ITEMS = [
   {
     q: 'How does the 15 minute turnaround buffer protect my reservation?',
-    a: 'Every paid slot enforces a mandatory 15 minute gap before the next booking starts. If a prior vehicle stays past that buffer, your bay locks for new bookings and ParkPool automatically moves you to a verified backup bay or issues a full refund with a ₹50 credit.',
+    a: 'Every paid slot enforces a mandatory 15 minute gap before the next booking starts. If a prior vehicle stays past that buffer, your bay locks for new bookings and Spacio automatically moves you to a verified backup bay or issues a full refund with a ₹50 credit.',
   },
   {
     q: 'How are parking prices, platform fees, and GST calculated?',
-    a: 'Parking fees follow the hourly rate posted by each verified provider. ParkPool adds a 10% service fee (minimum ₹10) plus 18% GST on the service charge, itemized clearly on every hold card and settlement receipt.',
+    a: 'Parking fees follow the hourly rate posted by each verified provider. Spacio adds a 10% service fee (minimum ₹10) plus 18% GST on the service charge, itemized clearly on every hold card and settlement receipt.',
   },
   {
     q: 'What happens if my meeting runs long and I need extra parking time?',
@@ -266,7 +266,7 @@ const TaglineRevealSection: React.FC = () => {
     >
       <div className="rounded-3xl bg-[#181818] px-6 py-12 text-white sm:px-12 sm:py-16">
         <div className="caption-3 uppercase tracking-wider text-white/60">
-          Why drivers and facility owners stay with ParkPool
+          Why drivers and facility owners stay with Spacio
         </div>
         <h2 className="mt-4 max-w-[680px] heading-3 sm:heading-2 text-white">
           {TAGLINE_LINES.map((line, lineIndex) => (
@@ -311,7 +311,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onAuthComplete }) => {
 
   const [adminMode, setAdminMode] = useState<AdminModeState>('loading');
   const [adminEmail, setAdminEmail] = useState('');
-  const [adminName, setAdminName] = useState('ParkPool Operations Admin');
+  const [adminName, setAdminName] = useState('Spacio Operations Admin');
   const [adminPasscode, setAdminPasscode] = useState('');
   const [adminConfirmPasscode, setAdminConfirmPasscode] = useState('');
 
@@ -618,7 +618,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onAuthComplete }) => {
               <MapPin className="h-4 w-4 text-[#FF8A5C]" weight="fill" />
             </span>
             <span className="heading-6 text-[#111827]">
-              ParkPool <span className="text-[#C83709]">AI</span>
+              Spacio
             </span>
           </a>
 
@@ -682,7 +682,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onAuthComplete }) => {
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#111827] text-white">
                 <MapPin className="h-4 w-4 text-[#FF8A5C]" weight="fill" />
               </span>
-              <span className="heading-6 text-[#111827]">ParkPool AI</span>
+              <span className="heading-6 text-[#111827]">Spacio</span>
             </div>
             <button
               type="button"
@@ -1022,7 +1022,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onAuthComplete }) => {
                           required={adminMode === 'unclaimed'}
                           value={adminEmail}
                           onChange={(e) => setAdminEmail(e.target.value)}
-                          placeholder="admin@parkpool.local"
+                          placeholder="admin@spacio.local"
                           className="w-full rounded-xl border border-black/[0.1] bg-[#F8F7F4] px-3 py-2 body-5 text-[#111827] transition-colors duration-300 focus:border-[#4338CA] focus:bg-white focus:outline-none"
                         />
                       </div>
@@ -1249,7 +1249,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onAuthComplete }) => {
                       </button>
 
                       <div className="rounded-xl border border-black/[0.08] bg-[#F8F7F4] px-4 py-3 text-center caption-2 text-[#4B5563]">
-                        New to ParkPool AI?{' '}
+                        New to Spacio?{' '}
                         <button
                           type="button"
                           onClick={() => switchMode('register')}
@@ -1438,7 +1438,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onAuthComplete }) => {
               </h2>
               <p className="mt-3 body-3 text-[#4B5563]">
                 Public lots fill unpredictably and unverified curb spaces leave drivers blocked at
-                security booms. ParkPool verifies hosts, locks turnaround gaps, and clears gate
+                security booms. Spacio verifies hosts, locks turnaround gaps, and clears gate
                 entry before you leave home.
               </p>
             </div>
@@ -1621,7 +1621,7 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onAuthComplete }) => {
               <MapPin className="h-4 w-4 text-[#FF8A5C]" weight="fill" />
             </span>
             <div>
-              <div className="title-4 text-[#111827]">ParkPool AI</div>
+              <div className="title-4 text-[#111827]">Spacio</div>
               <div className="caption-5 text-[#4B5563]">
                 Bengaluru shared parking coordination platform
               </div>
@@ -1694,14 +1694,28 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onAuthComplete }) => {
               {legalDoc === 'privacy' ? (
                 <>
                   <p>
-                    ParkPool AI collects only your account identity, registered vehicle plates, and
+                    Spacio collects only your account identity, registered vehicle plates, and
                     booking schedule required to verify gate entry and reconcile Prepaid Wallet
                     settlements.
                   </p>
                   <p>
                     Provider financial records and facilities are scoped to the owning account
                     and audited operations administrators. Driver location coordinates are used
-                    strictly during active route requests and departure checks.
+                    strictly during active route requests and departure checks with your explicit
+                    device permission.
+                  </p>
+                  <p>
+                    Interactive maps and routing integrate Google Maps Platform features, subject
+                    to the{' '}
+                    <a
+                      href="https://policies.google.com/privacy?utm_campaign=gmp_mcp_codeassist_v1_aistudio"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-[#1A73E8]"
+                    >
+                      Google Privacy Policy
+                    </a>
+                    .
                   </p>
                 </>
               ) : (
@@ -1714,6 +1728,19 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onAuthComplete }) => {
                   <p>
                     Providers are responsible for maintaining safe gate access, accurate closing
                     cutoffs, and matching spot signage during active booking hours.
+                  </p>
+                  <p>
+                    This application integrates Google Maps Platform features and is subject to
+                    the{' '}
+                    <a
+                      href="https://maps.google.com/help/terms_maps/?utm_campaign=gmp_mcp_codeassist_v1_aistudio"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-[#1A73E8]"
+                    >
+                      Google Maps End User Additional Terms of Service
+                    </a>
+                    .
                   </p>
                 </>
               )}

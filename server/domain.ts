@@ -341,7 +341,7 @@ class ParkPoolStore {
       id: 'PRV-05',
       name: 'Raghavendra K. (Individual Host)',
       contactName: 'Raghavendra K.',
-      contactEmail: 'raghavendra.host@parkpool.in',
+      contactEmail: 'raghavendra.host@spacio.in',
       contactPhone: '+91 98452 71004',
       organizationName: 'Lane 4 Residential Driveway',
       registrationNumber: 'KHA-BLR-560092-958',
@@ -386,7 +386,7 @@ class ParkPoolStore {
       id: 'PRV-BLR-HUB',
       name: 'Bengaluru Verified Mobility Network',
       contactName: 'Central Partner Desk',
-      contactEmail: 'network@parkpool.in',
+      contactEmail: 'network@spacio.in',
       contactPhone: '+91 80 4990 1100',
       organizationName: 'Bengaluru Transit & Plaza Network',
       registrationNumber: 'KA-BLR-NET-2026-001',
@@ -981,7 +981,7 @@ class ParkPoolStore {
         [12.9855, 77.7363],
       ],
       accessControl: 'FASTag / QR Boom Barrier',
-      accessInstructions: 'Use right-hand ParkPool lane at Gate 3 boom barrier.',
+      accessInstructions: 'Use right-hand Spacio lane at Gate 3 boom barrier.',
       restrictions: ['Mandatory boom barrier QR scan', 'Max height 210cm'],
       lateArrivalPolicy: {
         graceMinutes: 20,
@@ -1095,7 +1095,7 @@ class ParkPoolStore {
         [12.9916, 77.5712],
       ],
       accessControl: 'QR Guard Scan',
-      accessInstructions: 'Enter via Sampige Rd South Gate and park in yellow-striped ParkPool row.',
+      accessInstructions: 'Enter via Sampige Rd South Gate and park in yellow-striped Spacio row.',
       restrictions: ['Uncovered lot', 'Close at 23:00'],
       lateArrivalPolicy: {
         graceMinutes: 20,
@@ -2260,7 +2260,7 @@ class ParkPoolStore {
           fileName: doc.fileName,
           mimeType: doc.mimeType,
           contentText: [
-            'PARKPOOL PRIVATE COMPLIANCE VAULT RECORD',
+            'SPACIO PRIVATE COMPLIANCE VAULT RECORD',
             `Document ID: ${doc.id}`,
             `Provider ID: ${prv.id} (${prv.organizationName})`,
             `Provider Type: ${prv.providerType}`,
@@ -3844,7 +3844,7 @@ class ParkPoolStore {
           [loc.lat, loc.lng],
         ],
         accessControl: tpl.accessControl,
-        accessInstructions: `Enter via ${tpl.entranceLabel}; present ParkPool QR/PIN to gate attendant.`,
+        accessInstructions: `Enter via ${tpl.entranceLabel}; present Spacio QR/PIN to gate attendant.`,
         restrictions: ['Max height 210cm', 'Check out before 23:30 closing'],
         lateArrivalPolicy: {
           graceMinutes: 15,
@@ -4997,7 +4997,7 @@ class ParkPoolStore {
 
     const token = input.scannedToken.trim();
     if (!token) {
-      return { ok: false, error: 'Please scan or provide a valid ParkPool QR token.' };
+      return { ok: false, error: 'Please scan or provide a valid Spacio QR token.' };
     }
 
     let parsedJsonPass: {
@@ -6644,7 +6644,7 @@ class ParkPoolStore {
     }
     bk.status = 'cancelled';
     bk.paymentStatus = 'refunded';
-    const wallet = this.getOrCreateWallet(bk.driverEmail || 'driver@parkpool.ai', bk.driverName);
+    const wallet = this.getOrCreateWallet(bk.driverEmail || 'driver@spacio.in', bk.driverName);
     wallet.balanceInr += bk.totalAmountInr;
     const nowIso = new Date().toISOString();
     wallet.ledger.unshift({
@@ -7407,7 +7407,7 @@ export const POLICY_RAG_CORPUS = [
     title: 'Vehicle Misuse & Emergency Escalation (India 112)',
     section: 'Section 11.4.D',
     content:
-      'ParkPool AI records verified host authority, driver booking details, and controlled check-in access logs, but does not promise complete physical security clearance. Hosts must never inspect suspected dangerous items; keep people clear and contact emergency services / police at 112 in India.',
+      'Spacio records verified host authority, driver booking details, and controlled check-in access logs, but does not promise complete physical security clearance. Hosts must never inspect suspected dangerous items; keep people clear and contact emergency services / police at 112 in India.',
   },
   {
     id: 'DOC-WALK-05',
